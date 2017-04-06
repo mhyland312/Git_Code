@@ -267,6 +267,7 @@ def idleDrop_RS2(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
             models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass)) == 1)
 
 ##Need to add more constraints here
+##This is just for GitHub
     models.optimize()
 
     #if models.status == gurobipy.GRB.Status.OPTIMAL:
