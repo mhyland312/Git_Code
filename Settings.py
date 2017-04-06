@@ -13,8 +13,19 @@ max_groupSize = 2
 time_step = 1 #seconds
 delta_veh_dist = veh_speed * time_step #feet
 #hold_for = 60 #seconds
-max_deviate = 1.6
+
+inf = 10000000000000
 
 
 RS_penalty = 30 * veh_speed #30seconds * veh_speed
-#wait_time_multi =           #sec * 
+wait_time_multi =  50.0
+
+
+###Rideshare Constraint Settings
+#vehicle cannot increase remaining travel distance by X%
+max_deviate = 1.6
+#must have an X% decrease with RS
+min_improve_perc = 0.8
+#must reduce wait time by Xmin
+min_improve_min = 1.5
+min_improve_ft = min_improve_min * 60 * veh_speed

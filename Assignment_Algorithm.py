@@ -14,6 +14,8 @@ def assign_veh(vehicle_idle_queue, vehicle_pickup_queue, vehicle_dropoff_queue, 
         answer = idleOnly_minDist(vehicle_idle_queue, pass_noAssign_Q, t)[0]
     elif opt_method == "match_RS":
         answer = idleDrop_RS(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t)[0]
+    elif opt_method == "match_RS_old":
+        answer = idleDrop_RS_old(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t)[0]
     elif opt_method == "match_idleDrop":
         answer = idleDrop_minDist(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t)[0]
     elif opt_method == "match_idlePick":
@@ -117,7 +119,7 @@ def idleOnly_minDist(vehicle_idle_queue, pass_noAssign_Q, t):
 
 
 #############################################################################################################
-def idleDrop_RS(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
+def idleDrop_RS_old(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
     len_pass = len(pass_noAssign_Q)
     Pass_Veh_assign = [[pass_noAssign_Q[n], Vehicle.Vehicle] for n in range(len_pass) ]
     dist = [-1 for n in range(len_pass)]
@@ -204,7 +206,7 @@ def idleDrop_RS(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
 
 
 #############################################################################################################
-def idleDrop_RS2(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
+def idleDrop_RS(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
     new_veh_drop_queue = []
     for a_veh in vehicle_dropoff_queue:
         if a_veh.next_pickup.person_id < 0:
@@ -221,20 +223,55 @@ def idleDrop_RS2(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
 
     distM = [[0 for j in range(tot_veh_length)] for i in range(len_pass)]
     x = [[0 for j in range(tot_veh_length)] for i in range(len_pass)]
+    RS_okay = [[0 for j in range(tot_veh_length)] for i in range(len_pass)]
 
     count_pass = -1
     for i_pass in pass_noAssign_Q:
         count_pass += 1
         count_veh = -1
         cur_wait = t - i_pass.request_time
+        dist_idle = [100000000 for j_idle_veh in range(len_veh_idle)]
         for j_veh in veh_idle_n_drop_Q:
             count_veh += 1
-            #if vehicle state is enroute_dropoff - need to add penalty for going out of way
-            if count_veh >= len_veh_idle:
-                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) + S.RS_penalty - cur_wait*50.0
-            else:
+            if count_veh < len_veh_idle:
                 distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
-            
+                dist_idle[count_veh] = Distance.dist_manhat(i_pass, j_veh)
+            #if vehicle state is enroute_dropoff - need to add penalty for going out of way
+            else:
+
+                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) + S.RS_penalty - cur_wait*50.0
+                min_dist_idle = min(dist_idle)
+
+                #rideshare must reduce wait distance by 20% relative to nearest idle vehicle
+                if (distM[count_pass][count_veh] < S.min_improve_perc * min_dist_idle):
+                    #rideshare must reduce wait distance by 7000 ft
+                    if(distM[count_pass][count_veh] -  min_dist_idle < S.min_improve_ft):
+                        #check to make sure the dropoff vehicle has enough capacity for a rideshare group
+                        if (j_veh.current_load + i_pass.group_size < j_veh.capacity):
+                            dist_RS_dropA = abs(j_veh.position_x - j_veh.current_dest_x)+ abs(j_veh.position_y - j_veh.current_dest_y)
+                            dist_RS_pickB = abs(j_veh.position_x - i_pass.pickup_location_x)+ abs(j_veh.position_y - i_pass.pickup_location_y)
+                            dist_pickB_dropA = abs(i_pass.pickup_location_x - j_veh.current_dest_x)+ abs(i_pass.pickup_location_y - j_veh.current_dest_y)
+                            dist_pickB_dropB = abs(i_pass.pickup_location_x - i_pass.dropoff_location_x)+ abs(i_pass.pickup_location_y - i_pass.dropoff_location_y)
+                            dist_dropA_dropB = abs(j_veh.current_dest_x - i_pass.dropoff_location_x)+ abs(j_veh.current_dest_y - i_pass.dropoff_location_y)
+                            #check to make sure the rideshare pickup is not in the opposite direction of the original passenger's drop
+                            if (dist_pickB_dropA < dist_RS_dropA and (dist_RS_pickB + dist_pickB_dropA) < S.max_deviate*dist_RS_dropA):
+                                #if the original passenger's drop is closer to new passenger's pickup than new passenger's destination
+                                if(dist_pickB_dropA < dist_pickB_dropB ):
+                                    #check to make sure the original passenger's drop is not in the opposite direction of the new passenger's drop
+                                    #check to make sure that the original passengers drop doesn't increase new passenger's distance/time by more than X% compared with a direct ride
+                                    if (dist_dropA_dropB < dist_pickB_dropB and (dist_pickB_dropA + dist_dropA_dropB) < S.max_deviate*dist_pickB_dropB):
+                                        RS_okay[count_pass][count_veh] = 1
+                                    else:
+                                        distM[count_pass][count_veh] = distM[count_pass][count_veh] + S.inf
+                                #if the new passenger's drop is closer to new passenger's pickup than original passenger's destination
+                                else:
+                                    #check to make sure the new passenger's drop is not in the opposite direction of the original passenger's drop
+                                    #check to make sure that the new passengers drop doesn't increase original passenger's distance/time by more than 30%
+                                    if (dist_dropA_dropB < dist_pickB_dropA and (dist_pickB_dropB + dist_dropA_dropB) < S.max_deviate*dist_pickB_dropA):
+                                        RS_okay[count_pass][count_veh] = 1
+                                    else:
+                                        distM[count_pass][count_veh] = distM[count_pass][count_veh] + S.inf
+
     #Model
     models = gurobipy.Model("RS_minDist")
     models.setParam( 'OutputFlag', False )
@@ -244,6 +281,10 @@ def idleDrop_RS2(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
         for j in range(tot_veh_length):
             x[i][j] = models.addVar(vtype=gurobipy.GRB.BINARY, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
     models.update()
+
+    for iii in range(len_pass):
+        for jjj in range(len_veh_idle, tot_veh_length):
+            models.addConstr(x[iii][jjj] * (1-RS_okay[iii][jjj]), gurobipy.GRB.EQUAL, 0)
 
     #constraints
     if (len_pass <= len_veh_idle):
@@ -266,21 +307,24 @@ def idleDrop_RS2(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
         for jj in range(tot_veh_length):
             models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass)) == 1)
 
-##Need to add more constraints here
-##This is just for GitHub
+
+
     models.optimize()
 
-    #if models.status == gurobipy.GRB.Status.OPTIMAL:
-    for m_pass in range(len_pass):
-        for n_veh in range(tot_veh_length):
-            if x[m_pass][n_veh].X == 1:
-                Pass_Veh_assign[m_pass] = [pass_noAssign_Q[m_pass], veh_idle_n_drop_Q[n_veh]]
-                passenger_vehice_dist.append(distM[m_pass][n_veh])
-                break
-    # else:
-    #     temp = nearest_idle_vehicle(vehicle_idle_queue, pass_noAssign_Q, t)
-    #     passenger_vehice_dist =  temp[1]
-    #     Pass_Veh_assign = temp[0]
+    if models.status == gurobipy.GRB.Status.OPTIMAL:
+        for m_pass in range(len_pass):
+            for n_veh in range(tot_veh_length):
+                #print(x[m_pass][n_veh])
+                if x[m_pass][n_veh].X == 1:
+                    Pass_Veh_assign[m_pass] = [pass_noAssign_Q[m_pass], veh_idle_n_drop_Q[n_veh]]
+                    passenger_vehice_dist.append(distM[m_pass][n_veh])
+                    if n_veh >= len_veh_idle:
+                        #print("Rideshare")
+                        veh_idle_n_drop_Q[n_veh].next_drop.rideshare = 1
+                        pass_noAssign_Q[m_pass].rideshare = 1
+                    break
+    else:
+        print("broken")
 
     return (Pass_Veh_assign, passenger_vehice_dist)
 #############################################################################################################

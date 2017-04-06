@@ -208,7 +208,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 "Error No Proper State"
 
     #Opt method 2
-        elif opt_method == "match_RS":
+        elif opt_method == "match_RS" or opt_method == "match_RS_old" :
             #just picked up passenger - now need to drop him/her off, but 2 cases
             if vehicle.state == "enroute_pickup":
                 #Case 1 - before pickup - no one else in vehicle

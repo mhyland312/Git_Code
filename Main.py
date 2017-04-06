@@ -168,7 +168,7 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
                             veh_pick_Q.append(j_vehicle)
                         #passenger assigned to non-idle vehicle
                         else:
-                            if opt_method == "match_RS":
+                            if opt_method == "match_RS" or opt_method == "match_RS_old":
                                 pass_noPick_Q.append(i_pass)
                                 People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
                                 veh_drop_Q.remove(j_vehicle)
