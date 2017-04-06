@@ -10,14 +10,14 @@ t0 = time.time()
 
 fleet_size1 =  [j for j in range(120,131,3)]
 fleet_size2 =  [j for j in range(160,240,10)]
-#fleet_size = fleet_size1 + fleet_size2
-fleet_size =  [250]
+fleet_size = fleet_size1 + fleet_size2
+#fleet_size =  [250]
 
-hold_for = [10, 3, 7]
+hold_for = [1, 3, 7, 10]
 #hold_for = [10]
 
-#opt_methods = [ "match_RS", "match_idlePick", "match_idleOnly", "match_idleDrop"]
-opt_methods = ["match_idleOnly", "match_idleDrop", "match_RS", "match_RS_old"]
+opt_methods = [ "match_RS", "match_idlePick", "match_idleOnly", "match_idleDrop"]
+#opt_methods = ["match_idleOnly", "match_idleDrop", "match_RS", "match_RS_old"]
 
 csv_results2 = open('../Results/BigResults'+ '_holds' + str(len(hold_for)) + '_fleet' + str(len(fleet_size)) + '_opt' + str(len(opt_methods))  +'.csv', 'w')
 results_writer2 = csv.writer(csv_results2, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)

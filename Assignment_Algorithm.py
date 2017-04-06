@@ -286,6 +286,7 @@ def idleDrop_RS(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
         for jjj in range(len_veh_idle, tot_veh_length):
             models.addConstr(x[iii][jjj] * (1-RS_okay[iii][jjj]), gurobipy.GRB.EQUAL, 0)
 
+
     #constraints
     if (len_pass <= len_veh_idle):
         for ii in range(len_pass):
@@ -295,7 +296,7 @@ def idleDrop_RS(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
             
     elif (len_pass <= tot_veh_length):
         for ii in range(len_pass):
-            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) == 1)
+            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) <= 1)
         for jj in range(len_veh_idle):
             models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass)) == 1)
         for jj in range(len_veh_idle, tot_veh_length):

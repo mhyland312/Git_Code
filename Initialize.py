@@ -3,6 +3,7 @@ __author__ = 'Mike'
 import random
 import numpy
 import csv
+import Settings
 
 
 def generate_Demand(T_max, num_requests, max_distance, max_groupSize):
@@ -27,8 +28,14 @@ def generate_Demand(T_max, num_requests, max_distance, max_groupSize):
         c = (round(max_distance*random.random(), 4))
         d = int(demand_time[i])
         drop_select = random.randint(0,19)
-        e = drop_x[drop_select]
-        f = drop_y[drop_select]
+        if Settings.demand_Dist == "O_Uniform_D_Uniform":
+            e = (round(max_distance*random.random(), 4))
+            f = (round(max_distance*random.random(), 4))
+        elif Settings.demand_Dist == "O_Uniform_D_Cluster":
+            e = drop_x[drop_select]
+            f = drop_y[drop_select]
+        else:
+            print("Error: Need Demand Distribution")
         g = random.randint(1, max_groupSize)
         row = [a, b, c, d, e, f, g]
         writer.writerow(row)

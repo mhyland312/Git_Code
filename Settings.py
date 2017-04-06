@@ -20,7 +20,7 @@ inf = 10000000000000
 RS_penalty = 30 * veh_speed #30seconds * veh_speed
 wait_time_multi =  50.0
 
-
+demand_Dist = "O_Uniform_D_Uniform" #"O_Uniform_D_Transit" "O_Uniform_D_Cluster"
 ###Rideshare Constraint Settings
 #vehicle cannot increase remaining travel distance by X%
 max_deviate = 1.6
