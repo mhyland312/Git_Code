@@ -8,37 +8,39 @@ import sys
 
 
 #############################################################################################################
-def assign_veh(vehicle_idle_queue, vehicle_pickup_queue, vehicle_dropoff_queue, pass_noAssign_Q, pass_noPick_Q, opt_method, t):
+def assign_veh(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, opt_method, t):
     answer = "blank"
     if opt_method == "FCFS_longestIdle":
-        answer = FCFS_longestIdle(vehicle_idle_queue, pass_noAssign_Q)
+        answer = FCFS_longestIdle(veh_idle_Q, pass_noAssign_Q)
     elif opt_method == "FCFS_nearestIdle":
-        answer = FCFS_nearestIdle(vehicle_idle_queue, pass_noAssign_Q)
+        answer = FCFS_nearestIdle(veh_idle_Q, pass_noAssign_Q)
     elif opt_method == "match_idleOnly":
-        answer = idleOnly_minDist(vehicle_idle_queue, pass_noAssign_Q, t)
+        answer = idleOnly_minDist(veh_idle_Q, pass_noAssign_Q, t)
     elif opt_method == "match_RS":
-        answer = idleDrop_RS(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t)
+        answer = idleDrop_RS(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t)
     #elif opt_method == "match_RS_old":
-        #answer = idleDrop_RS_old(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t)[0]
+        #answer = idleDrop_RS_old(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t)[0]
     elif opt_method == "match_idleDrop":
-        answer = idleDrop_minDist(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t)
+        answer = idleDrop_minDist(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t)
     elif opt_method == "match_idlePick":
-        answer = idlePick_minDist(vehicle_idle_queue, vehicle_pickup_queue, pass_noAssign_Q, pass_noPick_Q, t)
+        answer = idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t)
+    elif opt_method == "match_idlePickDrop":
+        answer = idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, t)
     else:
         print("no_assignment_method")
     return(answer)
 #############################################################################################################
 
 #############################################################################################################
-def FCFS_longestIdle(vehicle_idle_queue, pass_noAssign_Q):
+def FCFS_longestIdle(veh_idle_Q, pass_noAssign_Q):
 
-    len_veh = len(vehicle_idle_queue)
+    len_veh = len(veh_idle_Q)
     len_pass = len(pass_noAssign_Q)
     Pass_Veh_assign = [[pass_noAssign_Q[n], Vehicle.Vehicle] for n in range(len_pass) ]
 
     max_match = min(len_pass,len_veh)
     for i_match in range(max_match):
-        Pass_Veh_assign[i_match] = [pass_noAssign_Q[i_match], vehicle_idle_queue[i_match]]
+        Pass_Veh_assign[i_match] = [pass_noAssign_Q[i_match], veh_idle_Q[i_match]]
 
     return (Pass_Veh_assign)
 
@@ -46,7 +48,7 @@ def FCFS_longestIdle(vehicle_idle_queue, pass_noAssign_Q):
 
 
 #############################################################################################################
-def FCFS_nearestIdle(vehicle_idle_queue, pass_noAssign_Q):
+def FCFS_nearestIdle(veh_idle_Q, pass_noAssign_Q):
     len_pass = len(pass_noAssign_Q)
     Pass_Veh_assign = [[pass_noAssign_Q[n], Vehicle.Vehicle] for n in range(len_pass) ]
 
@@ -57,14 +59,14 @@ def FCFS_nearestIdle(vehicle_idle_queue, pass_noAssign_Q):
         min_dist = 100000000000
         win_veh_index = -1
         veh_index = -1
-        for j_veh in vehicle_idle_queue:
+        for j_veh in veh_idle_Q:
             veh_index += 1
             dist = Distance.dist_manhat(i_person, j_veh)
             if dist < min_dist and not (j_veh.vehicle_id in used_vehicles): #make sure that two persons aren't assigned to same vehicle
                 win_veh_index = veh_index
                 min_dist = dist
         if win_veh_index >= 0:
-            Win_Vehicle = vehicle_idle_queue[win_veh_index]
+            Win_Vehicle = veh_idle_Q[win_veh_index]
             used_vehicles.append(Win_Vehicle.vehicle_id)
         else:
             Win_Vehicle = Vehicle.Vehicle
@@ -76,8 +78,8 @@ def FCFS_nearestIdle(vehicle_idle_queue, pass_noAssign_Q):
 
 
 #############################################################################################################
-def idleOnly_minDist(vehicle_idle_queue, pass_noAssign_Q, t):
-    len_veh = len(vehicle_idle_queue)
+def idleOnly_minDist(veh_idle_Q, pass_noAssign_Q, t):
+    len_veh = len(veh_idle_Q)
     len_pass = len(pass_noAssign_Q)
     Pass_Veh_assign = [[pass_noAssign_Q[n], Vehicle.Vehicle] for n in range(len_pass)]
 
@@ -89,7 +91,7 @@ def idleOnly_minDist(vehicle_idle_queue, pass_noAssign_Q, t):
         count_pass += 1
         count_veh = -1
         cur_wait = t - i_pass.request_time
-        for j_veh in vehicle_idle_queue:
+        for j_veh in veh_idle_Q:
             count_veh += 1
             distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait * 50.0
 
@@ -121,7 +123,7 @@ def idleOnly_minDist(vehicle_idle_queue, pass_noAssign_Q, t):
         for m_pass in range(len_pass):
             for n_veh in range(len_veh):
                 if x[m_pass][n_veh].X == 1:
-                    Pass_Veh_assign[m_pass] = [pass_noAssign_Q[m_pass], vehicle_idle_queue[n_veh]]
+                    Pass_Veh_assign[m_pass] = [pass_noAssign_Q[m_pass], veh_idle_Q[n_veh]]
                     break
     else:
         sys.exit("No Optimal Solution - idleOnly_minDist")
@@ -132,14 +134,14 @@ def idleOnly_minDist(vehicle_idle_queue, pass_noAssign_Q, t):
 
 
 #############################################################################################################
-def idleDrop_RS(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
+def idleDrop_RS(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
     new_veh_drop_queue = []
-    for a_veh in vehicle_dropoff_queue:
+    for a_veh in veh_drop_Q:
         if a_veh.next_pickup.person_id < 0:
             new_veh_drop_queue.append(a_veh)    
 
-    len_veh_idle = len(vehicle_idle_queue)
-    veh_idle_n_drop_Q = vehicle_idle_queue + new_veh_drop_queue
+    len_veh_idle = len(veh_idle_Q)
+    veh_idle_n_drop_Q = veh_idle_Q + new_veh_drop_queue
     tot_veh_length = len(veh_idle_n_drop_Q)
     
     len_pass = len(pass_noAssign_Q)
@@ -253,15 +255,15 @@ def idleDrop_RS(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
 
 
 #############################################################################################################
-def idleDrop_minDist(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
+def idleDrop_minDist(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
     #remove vehicles from dropoff queue that already have another pickup after their dropoff
     new_veh_drop_queue = []
-    for a_veh in vehicle_dropoff_queue:
+    for a_veh in veh_drop_Q:
         if a_veh.next_pickup.person_id < 0:
             new_veh_drop_queue.append(a_veh)
 
-    len_veh_idle = len(vehicle_idle_queue)
-    veh_idle_n_drop_Q = vehicle_idle_queue + new_veh_drop_queue
+    len_veh_idle = len(veh_idle_Q)
+    veh_idle_n_drop_Q = veh_idle_Q + new_veh_drop_queue
     tot_veh_length = len(veh_idle_n_drop_Q)
     
     len_pass = len(pass_noAssign_Q)
@@ -391,27 +393,111 @@ def idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t):
 #############################################################################################################
 
 
+#############################################################################################################
+def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, t):
+    #remove vehicles from dropoff queue that already have another pickup after their dropoff
+    new_veh_drop_Q = []
+    for a_veh in veh_drop_Q:
+        if a_veh.next_pickup.person_id < 0:
+            new_veh_drop_Q.append(a_veh)
+
+    len_veh_idle = len(veh_idle_Q)
+    len_veh_new_drop = len(new_veh_drop_Q)
+
+    all_veh = veh_idle_Q  + new_veh_drop_Q + veh_pick_Q
+    tot_veh_length = len(all_veh)
+
+    len_pass_noAssign = len(pass_noAssign_Q)
+    pass_noAssignPick_Q = pass_noAssign_Q + pass_noPick_Q
+    len_pass_noPickAssign = len(pass_noAssignPick_Q)
+
+    Pass_Veh_assign = [[pass_noAssignPick_Q[n], Vehicle.Vehicle] for n in range(len_pass_noPickAssign) ]
+
+    distM = [[0 for j in range(tot_veh_length)] for i in range(len_pass_noPickAssign)]
+    x = [[0 for j in range(tot_veh_length)] for i in range(len_pass_noPickAssign)]
+
+    count_pass = -1
+    for i_pass in pass_noAssignPick_Q:
+        count_pass += 1
+        count_veh = -1
+        cur_wait = t - i_pass.request_time
+        for j_veh in all_veh:
+            count_veh += 1
+
+            if i_pass < len_pass_noAssign & count_veh < len_veh_idle:
+                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
+            elif i_pass < len_pass_noAssign & count_veh < len_veh_idle + len_veh_new_drop:
+                distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - cur_wait*50.0
+            elif i_pass < len_pass_noAssign:
+                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + S.veh_speed*20 + j_veh.reassign*100000
+            elif count_veh < len_veh_idle:
+                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + S.veh_speed*20
+            elif count_veh < len_veh_idle + len_veh_new_drop:
+                distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - cur_wait*50.0 + S.veh_speed*20
+            elif j_veh.next_pickup == i_pass:
+                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
+            else:
+                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + 2*S.veh_speed*20 + j_veh.reassign*100000
+
+
+
+    #Model
+    models = gurobipy.Model("idlePickDrop_minDist")
+    models.setParam( 'OutputFlag', False )
+
+    #Decision Variables
+    for i in range(len_pass_noPickAssign):
+        for j in range(all_veh):
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.BINARY, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
+    models.update()
+
+    #constraints
+    if (len_pass_noPickAssign <= all_veh):
+        for ii in range(len_pass_noPickAssign):
+            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_veh_idle_n_pick)) == 1)
+        for jj in range(all_veh):
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass_noPickAssign)) <= 1)
+
+    else:
+        for ii in range(len_pass_noPickAssign):
+            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_veh_idle_n_pick)) <= 1)
+        for jj in range(all_veh):
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass_noPickAssign)) == 1)
+
+    models.optimize()
+
+    if models.status == gurobipy.GRB.Status.OPTIMAL:
+        for m_pass in range(len_pass_noPickAssign):
+            for n_veh in range(all_veh):
+                if x[m_pass][n_veh].X == 1:
+                    Pass_Veh_assign[m_pass] = [pass_noAssignPick_Q[m_pass], all_veh[n_veh]]
+                    break
+    else:
+        sys.exit("No Optimal Solution - idlePickDrop_minDist")
+    return (Pass_Veh_assign)
+#############################################################################################################
+
 
 
 
 
 ########################### Old RS##########################################################################
 #############################################################################################################
-def idleDrop_RS_old(vehicle_idle_queue, vehicle_dropoff_queue, pass_noAssign_Q, t):
+def idleDrop_RS_old(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
     len_pass = len(pass_noAssign_Q)
     Pass_Veh_assign = [[pass_noAssign_Q[n], Vehicle.Vehicle] for n in range(len_pass) ]
     dist = [-1 for n in range(len_pass)]
 
     answer_idle = []
     dist_idle = []
-    idle = idleOnly_minDist(vehicle_idle_queue, pass_noAssign_Q,t)
+    idle = idleOnly_minDist(veh_idle_Q, pass_noAssign_Q,t)
     answer_idle.append(idle[0])
     dist_idle.append(idle[1])
 
-    #if len(vehicle_idle_queue) < 3 * len(pass_noAssign_Q):
+    #if len(veh_idle_Q) < 3 * len(pass_noAssign_Q):
     answer_rideshare = []
     dist_rideshare = []
-    rideshare = idleOnly_minDist(vehicle_dropoff_queue, pass_noAssign_Q, t)
+    rideshare = idleOnly_minDist(veh_drop_Q, pass_noAssign_Q, t)
     answer_rideshare.append(rideshare[0])
     dist_rideshare.append(rideshare[1])
 

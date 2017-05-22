@@ -3,9 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="b4c354bf-159c-4895-887d-f2ac00d7f685" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Assignment_Algorithm.py" afterPath="$PROJECT_DIR$/Assignment_Algorithm.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Run_Main.py" afterPath="$PROJECT_DIR$/Run_Main.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Vehicle.py" afterPath="$PROJECT_DIR$/Vehicle.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/gurobi.log" afterPath="$PROJECT_DIR$/gurobi.log" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="Git_Code.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -28,12 +26,14 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="Assignment_Algorithm.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="Assignment_Algorithm.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Assignment_Algorithm.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="8211">
-              <caret line="48" column="20" selection-start-line="48" selection-start-column="4" selection-end-line="48" selection-end-column="20" />
-              <folding />
+            <state vertical-scroll-proportion="0.5778146" vertical-offset="7726" max-vertical-offset="9741">
+              <caret line="475" column="62" selection-start-line="475" selection-start-column="62" selection-end-line="475" selection-end-column="62" />
+              <folding>
+                <element signature="e#21#36#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -98,11 +98,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Vehicle.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="Vehicle.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Vehicle.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.6379822" vertical-offset="1440" max-vertical-offset="7225">
-              <caret line="111" column="42" selection-start-line="111" selection-start-column="42" selection-end-line="111" selection-end-column="42" />
+            <state vertical-scroll-proportion="-18.214285" vertical-offset="6579" max-vertical-offset="7225">
+              <caret line="418" column="39" selection-start-line="418" selection-start-column="39" selection-end-line="418" selection-end-column="39" />
               <folding />
             </state>
           </provider>
@@ -131,9 +131,9 @@
         <option value="$PROJECT_DIR$/Main.py" />
         <option value="$PROJECT_DIR$/Initialize.py" />
         <option value="$PROJECT_DIR$/Settings.py" />
-        <option value="$PROJECT_DIR$/Assignment_Algorithm.py" />
         <option value="$PROJECT_DIR$/Vehicle.py" />
         <option value="$PROJECT_DIR$/Run_Main.py" />
+        <option value="$PROJECT_DIR$/Assignment_Algorithm.py" />
       </list>
     </option>
   </component>
@@ -482,7 +482,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="1089" max-vertical-offset="8381">
           <caret line="83" column="23" selection-start-line="83" selection-start-column="23" selection-end-line="83" selection-end-column="23" />
-          <folding />
+          <folding>
+            <element signature="e#21#36#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -546,7 +548,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="8432">
           <caret line="77" column="0" selection-start-line="77" selection-start-column="0" selection-end-line="77" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#21#36#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -610,7 +614,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="8432">
           <caret line="32" column="76" selection-start-line="32" selection-start-column="76" selection-end-line="32" selection-end-column="76" />
-          <folding />
+          <folding>
+            <element signature="e#21#36#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -674,7 +680,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="2448" max-vertical-offset="8364">
           <caret line="153" column="61" selection-start-line="153" selection-start-column="61" selection-end-line="153" selection-end-column="61" />
-          <folding />
+          <folding>
+            <element signature="e#21#36#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -738,7 +746,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="7667">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#21#36#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -853,19 +863,21 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Assignment_Algorithm.py">
+    <entry file="file://$PROJECT_DIR$/Vehicle.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="8211">
-          <caret line="48" column="20" selection-start-line="48" selection-start-column="4" selection-end-line="48" selection-end-column="20" />
+        <state vertical-scroll-proportion="-18.214285" vertical-offset="6579" max-vertical-offset="7225">
+          <caret line="418" column="39" selection-start-line="418" selection-start-column="39" selection-end-line="418" selection-end-column="39" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Vehicle.py">
+    <entry file="file://$PROJECT_DIR$/Assignment_Algorithm.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.6379822" vertical-offset="1440" max-vertical-offset="7225">
-          <caret line="111" column="42" selection-start-line="111" selection-start-column="42" selection-end-line="111" selection-end-column="42" />
-          <folding />
+        <state vertical-scroll-proportion="0.5778146" vertical-offset="7726" max-vertical-offset="9741">
+          <caret line="475" column="62" selection-start-line="475" selection-start-column="62" selection-end-line="475" selection-end-column="62" />
+          <folding>
+            <element signature="e#21#36#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
