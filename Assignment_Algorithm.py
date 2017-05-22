@@ -11,9 +11,9 @@ import sys
 def assign_veh(vehicle_idle_queue, vehicle_pickup_queue, vehicle_dropoff_queue, pass_noAssign_Q, pass_noPick_Q, opt_method, t):
     answer = "blank"
     if opt_method == "FCFS_longestIdle":
-        answer = FCFS_longestIdle(vehicle_idle_queue, pass_noAssign_Q, t)
+        answer = FCFS_longestIdle(vehicle_idle_queue, pass_noAssign_Q)
     elif opt_method == "FCFS_nearestIdle":
-        answer = FCFS_nearestIdle(vehicle_idle_queue, pass_noAssign_Q, t)
+        answer = FCFS_nearestIdle(vehicle_idle_queue, pass_noAssign_Q)
     elif opt_method == "match_idleOnly":
         answer = idleOnly_minDist(vehicle_idle_queue, pass_noAssign_Q, t)
     elif opt_method == "match_RS":
@@ -30,31 +30,15 @@ def assign_veh(vehicle_idle_queue, vehicle_pickup_queue, vehicle_dropoff_queue, 
 #############################################################################################################
 
 #############################################################################################################
-def FCFS_longestIdle(vehicle_idle_queue, pass_noAssign_Q, t):
+def FCFS_longestIdle(vehicle_idle_queue, pass_noAssign_Q):
+
+    len_veh = len(vehicle_idle_queue)
     len_pass = len(pass_noAssign_Q)
     Pass_Veh_assign = [[pass_noAssign_Q[n], Vehicle.Vehicle] for n in range(len_pass) ]
 
-    used_vehicles = []
-    count_p = -1
-    for i_person in pass_noAssign_Q:
-        count_p += 1
-        min_dist = 100000000000
-        win_veh_index = -1
-        veh_index = -1
-        for j_veh in vehicle_idle_queue:
-            veh_index += 1
-            dist = Distance.dist_manhat(i_person, j_veh)
-            if dist < min_dist and not (j_veh.vehicle_id in used_vehicles): #make sure that two persons aren't assigned to same vehicle
-                win_veh_index = veh_index
-                min_dist = dist
-
-        if win_veh_index >= 0:
-            Win_Vehicle = vehicle_idle_queue[win_veh_index]
-            used_vehicles.append(Win_Vehicle.vehicle_id)
-        else:
-            Win_Vehicle = Vehicle.Vehicle
-
-        Pass_Veh_assign[count_p] = [i_person, Win_Vehicle]
+    max_match = min(len_pass,len_veh)
+    for i_match in range(max_match):
+        Pass_Veh_assign[i_match] = [pass_noAssign_Q[i_match], vehicle_idle_queue[i_match]]
 
     return (Pass_Veh_assign)
 
@@ -62,7 +46,7 @@ def FCFS_longestIdle(vehicle_idle_queue, pass_noAssign_Q, t):
 
 
 #############################################################################################################
-def FCFS_nearestIdle(vehicle_idle_queue, pass_noAssign_Q, t):
+def FCFS_nearestIdle(vehicle_idle_queue, pass_noAssign_Q):
     len_pass = len(pass_noAssign_Q)
     Pass_Veh_assign = [[pass_noAssign_Q[n], Vehicle.Vehicle] for n in range(len_pass) ]
 

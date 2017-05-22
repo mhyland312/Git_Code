@@ -174,7 +174,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
   #For all other vehicle state changes - update Vehicle varies by opt method
     else:
     #Opt method 1
-        if opt_method == "match_idleOnly":
+        if opt_method == "match_idleOnly" or opt_method == "FCFS_nearestIdle" or opt_method == "FCFS_longestIdle" :
             #just picked up passenger - now need to drop him/her off
             if vehicle.state == "enroute_pickup":
                 vehicle.pass_inVeh.append(person1)
