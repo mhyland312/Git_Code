@@ -67,18 +67,6 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
     #begin simulation
     for t in range(0, T_max, time_step ):
 
-        # if t%200 == 0:
-        #     print( "time=" + str(t) + " len_idle_queue=" + str(len(veh_idle_Q)) + " len_pick_queue=" + str(len(veh_pick_Q)) +
-        #     " len_drop_queue=" + str(len(veh_drop_Q)))
-        #     print( "time=" + str(t) + " len_pass_noAssign_queue=" + str(len(pass_noAssign_Q)) + " len_pass_noPick_queue=" + str(len(pass_noPick_Q)))
-
-        # if t > 500 and t%5 == 0:
-        #     print( "time=" + str(t) + " len_idle_queue=" + str(len(veh_idle_Q)) + " len_pick_queue=" + str(len(veh_pick_Q)) +
-        #     " len_drop_queue=" + str(len(veh_drop_Q)))
-        #     print( "time=" + str(t) + " len_pass_noAssign_queue=" + str(len(pass_noAssign_Q)) + " len_pass_noPick_queue=" + str(len(pass_noPick_Q)))
-        #
-        #
-    ##################################################################################################
     # move en_route dropoff vehicles
         for i_veh_drop in veh_drop_Q:
             person_id_drop = i_veh_drop.next_drop.person_id
