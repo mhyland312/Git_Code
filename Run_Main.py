@@ -16,8 +16,9 @@ fleet_size =  fleet_size2  #[250]
 hold_for = [ 7, 15, 30]
 #hold_for = [10]
 
-opt_methods = [ "FCFS_longestIdle", "FCFS_nearestIdle", "match_RS", "match_idlePick", "match_idleOnly", "match_idleDrop"]
-#opt_methods = ["match_idleOnly"]
+#opt_methods = [ "FCFS_longestIdle", "FCFS_nearestIdle", "match_RS", "match_idlePick", "match_idleOnly", "match_idleDrop"]
+#opt_methods = ["match_idlePickDrop"]
+opt_methods = ["match_idlePick"]
 
 #csv_results2 = open('../Results/BigResults'+ '_holds' + str(len(hold_for)) + '_fleet' + str(len(fleet_size)) + '_opt' + str(len(opt_methods))  +'.csv', 'w')
 #results_writer2 = csv.writer(csv_results2, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)

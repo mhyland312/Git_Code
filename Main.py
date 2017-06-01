@@ -120,7 +120,7 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
     ###################################################################################################
     #Every X seconds assign passengers in the waiting queue to a vehicle
         if t%hold_for == 0:
-            if len(pass_noAssign_Q) > 0 and len(veh_idle_Q) > 0:
+            if len(pass_noAssign_Q) > 0 and len(veh_idle_Q) > 0: #Mike - probably want to check removing second if condition
                 #return index of vehicle_idle_queue for every passenger
                 pass_veh_assgn = AA.assign_veh(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, opt_method, t)
 
@@ -178,6 +178,12 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
                                     pass_noPick_Q.append(i_pass)
                                 People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
                                 Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
+
+                            #elif opt_method == "match_idlePickDrop":
+
+
+
+
                     else:
                         print("Error in Assignment!")
 
