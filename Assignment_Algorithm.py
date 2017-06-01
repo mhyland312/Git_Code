@@ -437,7 +437,7 @@ def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pa
 
     distM = [[0 for j in range(tot_veh_length)] for i in range(len_pass_noPickAssign)]
     x = [[0 for j in range(tot_veh_length)] for i in range(len_pass_noPickAssign)]
-    prev_assign = [[0 for j in range(tot_veh_length)] for i in range(len_pass_noPickAssign)]
+    prev_assign = [0 for i in range(len_pass_noPickAssign)]
 
     count_pass = -1
     for i_pass in pass_noAssignPick_Q:
@@ -481,8 +481,8 @@ def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pa
     #constraints
 
     #Previously assigned passengers must be assigned a vehicle
-    for ii in range(len_pass_noPickAssign):
-        models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) - prev_assign[ii] >= 0)
+    #for ii in range(len_pass_noPickAssign):
+     #   models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) - prev_assign[ii] >= 0)
 
     if (len_pass_noPickAssign <= tot_veh_length):
         for ii in range(len_pass_noPickAssign):

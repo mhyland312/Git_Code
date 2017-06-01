@@ -128,8 +128,9 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
                 used_vehicles = []
                 old_veh_pick_Q = veh_pick_Q[0:len(veh_pick_Q)]
                 for [i_pass, j_vehicle] in pass_veh_assgn:
+
                     #passenger is not assigned to a real vehicle, and the person is real
-                    if j_vehicle.vehicle_id < 0 and i_pass.person_id >= 0 :
+                    if j_vehicle.vehicle_id < 0 and i_pass.person_id >= 0 :  #Mike - look to remove second condition
                         remaining_persons.append(i_pass)
                         if i_pass in pass_noPick_Q:
                             pass_noPick_Q.remove(i_pass)
@@ -146,14 +147,17 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
 
                         # passenger assigned to an idle vehicle
                         if j_vehicle in veh_idle_Q:
+
                             #if passenger already had a vehicle coming towards it, but then assigned a new vehicle
                             if i_pass.vehicle_id >= 0:
                                 i_pass.state = "reassign"
                             else:
                                 pass_noPick_Q.append(i_pass)
+
                             People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
                             Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
                             veh_pick_Q.append(j_vehicle)
+
                         #passenger assigned to non-idle vehicle
                         else:
                             if opt_method == "match_RS" or opt_method == "match_RS_old":
@@ -179,10 +183,28 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
                                 People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
                                 Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
 
-                            #elif opt_method == "match_idlePickDrop":
+                            elif opt_method == "match_idlePickDrop":
 
+                                if j_vehicle in veh_pick_Q:
+                                    j_vehicle.state = "reassign"
+                                    if i_pass.vehicle_id >= 0:
+                                        i_pass.state = "reassign"
+                                    else:
+                                        pass_noPick_Q.append(i_pass)
+                                    People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
+                                    Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
 
+                                elif j_vehicle in veh_drop_Q:
+                                    pass_noPick_Q.append(i_pass)
+                                    People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
+                                    j_vehicle.state = "new_assign"
+                                    Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
 
+                                else:
+                                    print("Error - something wrong with j_vehicle in match_idlePickDrop")
+
+                                #People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
+                                #Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
 
                     else:
                         print("Error in Assignment!")
@@ -196,7 +218,7 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
                         veh_idle_Q.remove(i_used)
 
                 #vehicle was going to pick up traveler, now it is not
-                if opt_method == "match_idlePick":
+                if opt_method == "match_idlePick" or opt_method == "match_idlePickDrop":
                     for ijk_veh in old_veh_pick_Q:
                         if ijk_veh not in used_vehicles:
                             ijk_veh.state = "unassign"

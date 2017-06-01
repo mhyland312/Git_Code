@@ -205,7 +205,8 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.dropoff_times.append(t)
                 vehicle.pass_drop_count += 1
             else:
-                "Error No Proper State"
+                print("Error No Proper State - Opt Method 1")
+
 
     #Opt method 2
         elif opt_method == "match_RS" or opt_method == "match_RS_old" :
@@ -356,7 +357,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.pass_assgn_count += 1
 
             else:
-                "Error No Proper State"
+                print("Error No Proper State - Opt Method 3")
 
     #Opt method 4
         elif opt_method == "match_idlePick":
@@ -415,7 +416,98 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.next_pickup = Person.Person
                 vehicle.state = state_idle()
 
+
             else:
-                "Error No Proper State"
+                print("Error No Proper State - Opt Method 4")
+
+
+    #Opt method 5
+        elif opt_method == "match_idlePickDrop":
+
+            #same as base idle-only case, except for a special case where vehicles are reassigned
+            if vehicle.state == "enroute_pickup":
+                vehicle.pass_inVeh.append(person1)
+                vehicle.pass_toPickup.remove(person1)
+                vehicle.current_load += person1.group_size
+                vehicle.position_x = person1.pickup_location_x
+                vehicle.position_y = person1.pickup_location_y
+                vehicle.current_dest_x = person1.dropoff_location_x
+                vehicle.current_dest_y = person1.dropoff_location_y
+                vehicle.next_pickup = Person.Person
+                vehicle.next_drop = person1
+                vehicle.state = state_enroute_dropoff()
+
+                vehicle.pass_picked_list.append(person1.person_id)
+                vehicle.pickup_times.append(t)
+                vehicle.pass_pick_count += 1
+
+            # just dropped off passenger - now idle - but might already have another pickup lined-up
+            elif vehicle.state == "enroute_dropoff":
+                #Case 1: No one else to pickup
+                if len(vehicle.pass_toPickup) == 0:
+                    vehicle.pass_inVeh.remove(person1)
+                    vehicle.current_load -= person1.group_size
+                    vehicle.position_x = person1.dropoff_location_x
+                    vehicle.position_y = person1.dropoff_location_y
+                    vehicle.next_pickup = Person.Person
+                    vehicle.next_drop = Person.Person
+                    vehicle.state = state_idle()
+                #Case 2: Already have next passenger to pickup
+                else:
+                    vehicle.pass_inVeh.remove(person1)
+                    vehicle.current_load -= person1.group_size
+                    vehicle.position_x = person1.dropoff_location_x
+                    vehicle.position_y = person1.dropoff_location_y
+                    vehicle.next_drop = Person.Person
+                    ####different for idleDrop##########
+                    vehicle.next_pickup = vehicle.pass_toPickup[0]
+                    vehicle.state = state_enroute_pickup()
+                    next_pickup_pass = vehicle.next_pickup
+                    vehicle.current_dest_x = next_pickup_pass.pickup_location_x
+                    vehicle.current_dest_y = next_pickup_pass.pickup_location_y
+                    ######################################
+
+                vehicle.pass_dropped_list.append(person1.person_id)
+                vehicle.dropoff_times.append(t)
+                vehicle.pass_drop_count += 1
+                vehicle.reassign = 0
+
+            #another case unique to this opt method. enroute dropoff vehicle assigned to next passenger
+            elif vehicle.state == "new_assign":
+                vehicle.pass_toPickup.append(person1)
+                vehicle.next_pickup = person1
+                vehicle.state = state_enroute_dropoff()
+
+                vehicle.pass_assgn_list.append(person1.person_id)
+                vehicle.assigned_times.append(t)
+                vehicle.pass_assgn_count += 1
+
+            #was en_route to  pickup, but have been reassigned
+            elif vehicle.state == "reassign":
+                ####different#######
+                vehicle.pass_toPickup.remove(vehicle.pass_toPickup[0])
+                ######################################
+                vehicle.pass_toPickup.append(person1)
+                vehicle.current_dest_x = person1.pickup_location_x
+                vehicle.current_dest_y = person1.pickup_location_y
+                vehicle.next_pickup = person1
+                vehicle.state = state_enroute_pickup()
+
+                vehicle.pass_assgn_list.append(person1.person_id)
+                vehicle.assigned_times.append(t)
+                vehicle.pass_assgn_count += 1
+                vehicle.reassign = 1
+
+            elif vehicle.state == "unassign":
+                vehicle.pass_toPickup = []
+                vehicle.current_dest_x = -1.0
+                vehicle.current_dest_y = -1.0
+                vehicle.next_pickup = Person.Person
+                vehicle.state = state_idle()
+
+
+            else:
+                print("Error No Proper State - Opt Method 5")
+
 
     return vehicle

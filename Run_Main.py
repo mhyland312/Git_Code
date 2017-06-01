@@ -9,7 +9,7 @@ import time
 t0 = time.time()
 
 #fleet_size1 =  [j for j in range(120,131,3)]
-fleet_size2 =  [j for j in range(220,240,10)]
+fleet_size2 =  [j for j in range(160,240,10)]
 #fleet_size = fleet_size1 + fleet_size2
 fleet_size =  fleet_size2  #[250]
 
@@ -17,8 +17,8 @@ hold_for = [ 7, 15, 30]
 #hold_for = [10]
 
 #opt_methods = [ "FCFS_longestIdle", "FCFS_nearestIdle", "match_RS", "match_idlePick", "match_idleOnly", "match_idleDrop"]
-#opt_methods = ["match_idlePickDrop"]
-opt_methods = ["match_idlePick"]
+opt_methods = ["match_idlePickDrop"]
+#opt_methods = ["match_idlePick"]
 
 #csv_results2 = open('../Results/BigResults'+ '_holds' + str(len(hold_for)) + '_fleet' + str(len(fleet_size)) + '_opt' + str(len(opt_methods))  +'.csv', 'w')
 #results_writer2 = csv.writer(csv_results2, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
@@ -39,7 +39,7 @@ for i_run in range(0,10):
                 #run simulation
                 results = Main.Main(k_hold_for, Settings.T_max, Settings.time_step, m_opt_method, Settings.veh_speed)
                 print(results)                
-                #results_writer2.writerow([i_run, m_opt_method, k_hold_for, j_fleet_size, results ])
+                #results_writer2.writerow([ i_run, m_opt_method, k_hold_for, j_fleet_size, results])
                 print(time.time() - t0)
                                           
 
