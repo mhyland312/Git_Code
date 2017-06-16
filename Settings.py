@@ -1,12 +1,12 @@
 __author__ = 'Mike'
 
-simulation_len = 2 #hours
+simulation_len = 0.5 #hours
 requests_per_hour = 1500
 
-T_max = simulation_len*60*60  #conver hourse to seconds  #simulation time
+T_max = int(simulation_len*60*60)  #conver hourse to seconds  #simulation time
 veh_speed = 36.0 #ft/s = #20mph #vehicle speed
 max_distance = 2.5 * 5280.0 #miles #grid size
-num_requests = simulation_len * requests_per_hour
+num_requests = int(simulation_len * requests_per_hour)
 #num_vehicles = 100
 veh_capacity = 5
 max_groupSize = 2

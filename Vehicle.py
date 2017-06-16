@@ -26,7 +26,8 @@ class Vehicle(object):
 
     #output information - update throughout simulation
     total_distance = 0.0
-    time_in_use = 0
+    empty_distance = 0.0
+    loaded_distance = 0.0
     pass_assgn_list = []
     pass_picked_list = []
     pass_dropped_list = []
@@ -60,7 +61,8 @@ class Vehicle(object):
 
         #output information - update throughout simulation
         self.total_distance = 0.0
-        self.time_in_use = 0
+        self.empty_distance = 0.0
+        self.loaded_distance = 0.0
         self.pass_assgn_list = []
         self.pass_picked_list = []
         self.pass_dropped_list = []
@@ -99,23 +101,25 @@ def state_idle():
 ##############################################################################
 #Function to move vehicle every time step
 def moveVehicle_manhat(t, vehicle, person, opt_method):
-    vehicle.time_in_use +=1
+    #vehicle.time_in_use +=1
     dest_x = 0.0
     dest_y = 0.0
 
     if vehicle.state == "enroute_pickup":
         dest_x = person.pickup_location_x
         dest_y = person.pickup_location_y
+        vehicle.empty_distance += Settings.delta_veh_dist
 
     elif vehicle.state == "enroute_dropoff":
         dest_x = person.dropoff_location_x
         dest_y = person.dropoff_location_y
+        vehicle.loaded_distance += Settings.delta_veh_dist
 
     else:
         print("Error in moveVehicle_manhat - wrong vehicle state")
     
     #check for bugs - keep in code
-    if dest_x < 0 or dest_y < 0:
+    if dest_x <= 0.0 or dest_y <= 0.0:
         print("Error in moveVehicle_manhat - inproper vehicle-person match")
             
     veh_x = vehicle.position_x
@@ -137,6 +141,7 @@ def moveVehicle_manhat(t, vehicle, person, opt_method):
         else:                   vehicle.position_x += -1 * proportion_x * Settings.delta_veh_dist
         if veh_y < dest_y:      vehicle.position_y += proportion_y * Settings.delta_veh_dist
         else:                   vehicle.position_y += -1 * proportion_y * Settings.delta_veh_dist
+
         vehicle.total_distance += Settings.delta_veh_dist
 
     return(vehicle)

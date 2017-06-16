@@ -4,7 +4,7 @@ import csv
 import Vehicle
 import Person
 import Assignment_Algorithm as AA
-
+import numpy
 
 def Main(hold_for, T_max, time_step, opt_method, veh_speed):
     
@@ -232,66 +232,104 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
     ##################################################################################################
 
 
+    ##################################################################################################
+    #Calculate Performance Metrics for Single Simulation
+    ##################################################################################################
+
+    ####### Traveler Metrics ###############
+
+    ####### Incomplete Travelers Metrics
+    num_served = (list(p.state for p in People)).count("served")
+    num_inVeh = (list(p.state for p in People)).count("inVeh")
+    num_assgnd = (list(p.state for p in People)).count("assigned")
+    num_unassgnd = (list(p.state for p in People)).count("unassigned")
+
+    ####### Quality of Service Metrics
+    #remove edge effects, only count middle 80% <-- previously 60%
+    start = round(0.1*len(People))
+    end = round(0.9*len(People))
+    metric_People = People[start:end]
+    num_metric_People = len(metric_People) * 1.0
+
+    perc_Rideshare = numpy.mean(list(p.rideshare for p in metric_People))
+    perc_Reassigned = numpy.mean(list(p.reassigned for p in metric_People))
+
+    mean_ivtt = numpy.mean(list(p.travel_time for p in metric_People))
+    sd_ivtt = numpy.std(list(p.travel_time for p in metric_People))
+
+    mean_wait_pick = numpy.mean(list(p.wait_pick_time for p in metric_People))
+    sd_wait_pick = numpy.std(list(p.wait_pick_time for p in metric_People))
+
+    mean_wait_assgn = numpy.mean(list(p.wait_assgn_time for p in metric_People))
+    sd_wait_assgn = numpy.std(list(p.wait_assgn_time for p in metric_People))
 
 
 
+    ####### Vehicle Metrics ###############
 
+    tot_fleet_miles = sum(list(v.total_distance for v in Vehicles))
+    mean_tot_veh_dist= numpy.mean(list(v.total_distance for v in Vehicles))
+    sd_tot_veh_dist = numpy.std(list(v.total_distance for v in Vehicles))
+
+    empty_fleet_miles = sum(list(v.empty_distance for v in Vehicles))
+    mean_empty_veh_dist= numpy.mean(list(v.empty_distance for v in Vehicles))
+    sd_empty_veh_dist = numpy.std(list(v.empty_distance for v in Vehicles))
+
+    loaded_fleet_miles = sum(list(v.loaded_distance for v in Vehicles))
+    mean_loaded_veh_dist= numpy.mean(list(v.loaded_distance for v in Vehicles))
+    sd_loaded_veh_dist = numpy.std(list(v.loaded_distance for v in Vehicles))
+
+    #Initialize Vector of Metrics
     answer = []
-    #hold_for, T_max, time_step, opt_method
-    file_string1 = '../Results/trvlr_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) + '_opt' + str(opt_method)  +'.csv'
-    csv_traveler = open(file_string1, 'w')
-    traveler_writer = csv.writer(csv_traveler, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
-    traveler_writer.writerow(["person_id", "base_ivtt", "simulate_ivtt", "wait_assgn_time","wait_pick_time", "vehicle", "old_veh", "rideshare"])
-    non_rideshare_count = 0
-    cum_real_ivtt = 0
-    cum_base_ivtt = 0
-    cum_wait_assgn = 0
-    cum_wait_pick = 0
-    #cum_missed_pass = 0
-    cum_rideshare = 0
-    
-    start = round(0.2*len(People))
-    end = round(0.8*len(People))
-
-    for j_person in People[start:end]:
-        non_rideshare_count += 1
-        cum_real_ivtt += j_person.travel_time
-        base_ivtt = j_person.in_veh_dist/veh_speed
-        cum_base_ivtt += j_person.in_veh_dist/veh_speed
-        cum_wait_assgn += j_person.wait_assgn_time
-        cum_wait_pick += j_person.wait_pick_time
-        cum_rideshare += j_person.rideshare
-        #if j_person.wait_assgn_time < 0: #also need did not drop off yet
-         #   cum_missed_pass += 1
-          #  if j_person.wait_pick_time < 0:
-
-        traveler_writer.writerow([j_person.person_id, base_ivtt, j_person.travel_time, j_person.wait_assgn_time, j_person.wait_pick_time, j_person.vehicle_id, j_person.old_vehicles, j_person.rideshare])
 
 
-    answer.append(int(cum_real_ivtt/60.0))
-    answer.append(int(cum_base_ivtt/60.0))
-    answer.append(int(cum_wait_assgn/60.0))
-    answer.append(int(cum_wait_pick/60.0))
-    num_people = len(People)*1.0
-    answer.append(cum_rideshare/num_people)
 
 
-    file_string2 = '../Results/veh_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) + '_opt' + str(opt_method)  +'.csv'
-    csv_vehicle = open(file_string2, 'w')
-    vehicle_writer = csv.writer(csv_vehicle, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
-    vehicle_writer.writerow(["vehicle_id", "distance", "pass_assgn", "pass_pick", "pass_drop", "pass_drop_list"])
-    cum_distance = 0
-    for k_vehicle in Vehicles:
-        cum_distance += k_vehicle.total_distance
-        vehicle_writer.writerow([k_vehicle.vehicle_id, k_vehicle.total_distance, k_vehicle.pass_assgn_count,
-                                 k_vehicle.pass_pick_count, k_vehicle.pass_drop_count, k_vehicle.pass_dropped_list  ])
 
-    vehicle_writer.writerow(["cum_distance", cum_distance/5280.0])
 
-    answer.append(int(cum_distance/5280.0))
+
+
+
     
     answer.append(len(pass_noAssign_Q))
     answer.append(len(pass_noAssign_Q) + len(pass_noPick_Q))
-    
+
+
+
+
+    #
+    # ##################################################################################################
+    # #Traveler and Vehicle Results
+    # ##################################################################################################
+    #
+    # ####### Traveler Results ###############
+    # file_string1 = '../Results/trvlr_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) + '_opt' + str(opt_method)  +'.csv'
+    # csv_traveler = open(file_string1, 'w')
+    # traveler_writer = csv.writer(csv_traveler, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+    # traveler_writer.writerow(["person_id", "base_ivtt", "simulate_ivtt", "wait_assgn_time","wait_pick_time", "vehicle", "old_veh", "rideshare"])
+    #
+    # for j_person in People[start:end]:
+    #     base_ivtt = j_person.in_veh_dist/veh_speed
+    #     traveler_writer.writerow([j_person.person_id, base_ivtt, j_person.travel_time, j_person.wait_assgn_time, j_person.wait_pick_time, j_person.vehicle_id, j_person.old_vehicles, j_person.rideshare])
+    #
+    # ####### Vehicle Results ###############
+    # file_string2 = '../Results/veh_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) + '_opt' + str(opt_method)  +'.csv'
+    # csv_vehicle = open(file_string2, 'w')
+    # vehicle_writer = csv.writer(csv_vehicle, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+    # vehicle_writer.writerow(["vehicle_id", "distance", "pass_assgn", "pass_pick", "pass_drop", "pass_drop_list"])
+    #
+    # cum_distance = 0
+    # for k_vehicle in Vehicles:
+    #     cum_distance += k_vehicle.total_distance
+    #     vehicle_writer.writerow([k_vehicle.vehicle_id, k_vehicle.total_distance, k_vehicle.pass_assgn_count,
+    #                              k_vehicle.pass_pick_count, k_vehicle.pass_drop_count, k_vehicle.pass_dropped_list  ])
+    #
+    # vehicle_writer.writerow(["cum_distance", cum_distance/5280.0])
+
+
+
+
+
+
 
     return (answer)
