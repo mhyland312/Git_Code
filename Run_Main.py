@@ -9,24 +9,29 @@ import time
 t0 = time.time()
 
 #fleet_size1 =  [j for j in range(120,131,3)]
-fleet_size2 =  [j for j in range(200,240,10)]
+fleet_size2 =  [j for j in range(120,240,5)]
 #fleet_size = fleet_size1 + fleet_size2
 fleet_size =  fleet_size2  #[250]
 
-hold_for = [1, 3, 7, 15, 30]
+#hold_for = [1, 3, 7, 15, 30]
+hold_for = [10]
 
 
-#opt_methods = [ "FCFS_longestIdle", "FCFS_nearestIdle", "match_RS", "match_idlePick", "match_idleOnly", "match_idleDrop"]
-#opt_methods = ["match_idlePickDrop"]
-opt_methods = ["match_idlePick"]
+#opt_methods = [ "FCFS_longestIdle", "FCFS_nearestIdle", "match_idleOnly", "match_idlePick", "match_idleDrop", "match_RS"]
+opt_methods = ["match_idleDrop"]
+#opt_methods = ["match_idlePick"]
 
 csv_results2 = open('../Results/BigResults'+ '_holds' + str(len(hold_for)) + '_fleet' + str(len(fleet_size)) + '_opt' + str(len(opt_methods))  +'.csv', 'w')
 results_writer2 = csv.writer(csv_results2, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
-results_writer2.writerow(["demand_set" , "opt method", "hold time" , "fleet size",
-                          "cumul ivtt", "base ivtt", "wait assgn time", "wait pick time", "%Rideshare", "fleet miles",
-                          "unassigned pass", "noPick pass"])
+results_writer2.writerow(["demand set" , "opt method", "hold time" , "fleet size", "num metric people",
+                          "% Rideshare", "% Reassigned",
+                          "mean ivtt", "sd ivtt", "mean wait pick", "sd wait pick", "mean wait assgn", "sd wait assign",
+                          "fleet miles - all veh", "mean dist - all veh", "sd dist - all veh",
+                          "fleet miles - empty veh", "mean dist - empty veh", "sd dist - empty veh",
+                          "fleet miles - loaded veh", "mean dist - loaded veh", "sd dist - loaded veh", "fleet_utilization",
+                          "served", "in vehicle", "assigned", "unassigned"])
                          
-for i_run in range(0,10):
+for i_run in range(0,1):
     #generate random demand
     Init.generate_Demand(Settings.T_max, Settings.num_requests, Settings.max_distance,  Settings.max_groupSize)
     for j_fleet_size in fleet_size:

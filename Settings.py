@@ -1,6 +1,6 @@
 __author__ = 'Mike'
 
-simulation_len = 0.5 #hours
+simulation_len = 2.0 #hours
 requests_per_hour = 1500
 
 T_max = int(simulation_len*60*60)  #conver hourse to seconds  #simulation time

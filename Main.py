@@ -247,53 +247,49 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
     ####### Quality of Service Metrics
     #remove edge effects, only count middle 80% <-- previously 60%
     start = round(0.1*len(People))
-    end = round(0.9*len(People))
+    end = round(0.8*len(People))
     metric_People = People[start:end]
     num_metric_People = len(metric_People) * 1.0
 
-    perc_Rideshare = numpy.mean(list(p.rideshare for p in metric_People))
-    perc_Reassigned = numpy.mean(list(p.reassigned for p in metric_People))
+    perc_Rideshare = round(numpy.mean(list(p.rideshare for p in metric_People)),2)
+    perc_Reassigned = round(numpy.mean(list(p.reassigned for p in metric_People)),2)
 
-    mean_ivtt = numpy.mean(list(p.travel_time for p in metric_People))
-    sd_ivtt = numpy.std(list(p.travel_time for p in metric_People))
+    mean_ivtt = int(numpy.mean(list(p.travel_time for p in metric_People)))
+    sd_ivtt = int(numpy.std(list(p.travel_time for p in metric_People)))
 
-    mean_wait_pick = numpy.mean(list(p.wait_pick_time for p in metric_People))
-    sd_wait_pick = numpy.std(list(p.wait_pick_time for p in metric_People))
+    mean_wait_pick = int(numpy.mean(list(p.wait_pick_time for p in metric_People)))
+    sd_wait_pick = int(numpy.std(list(p.wait_pick_time for p in metric_People)))
 
-    mean_wait_assgn = numpy.mean(list(p.wait_assgn_time for p in metric_People))
-    sd_wait_assgn = numpy.std(list(p.wait_assgn_time for p in metric_People))
+    mean_wait_assgn = int(numpy.mean(list(p.wait_assgn_time for p in metric_People)))
+    sd_wait_assgn = int(numpy.std(list(p.wait_assgn_time for p in metric_People)))
 
 
 
     ####### Vehicle Metrics ###############
 
-    tot_fleet_miles = sum(list(v.total_distance for v in Vehicles))
-    mean_tot_veh_dist= numpy.mean(list(v.total_distance for v in Vehicles))
-    sd_tot_veh_dist = numpy.std(list(v.total_distance for v in Vehicles))
+    tot_fleet_miles = int(sum(list(v.total_distance for v in Vehicles))/5280.0)
+    mean_tot_veh_dist= round(numpy.mean(list(v.total_distance for v in Vehicles))/5280.0,2)
+    sd_tot_veh_dist = round(numpy.std(list(v.total_distance for v in Vehicles))/5280.0,2)
 
-    empty_fleet_miles = sum(list(v.empty_distance for v in Vehicles))
-    mean_empty_veh_dist= numpy.mean(list(v.empty_distance for v in Vehicles))
-    sd_empty_veh_dist = numpy.std(list(v.empty_distance for v in Vehicles))
+    empty_fleet_miles = int(sum(list(v.empty_distance for v in Vehicles))/5280.0)
+    mean_empty_veh_dist= round(numpy.mean(list(v.empty_distance for v in Vehicles))/5280.0,2)
+    sd_empty_veh_dist = round(numpy.std(list(v.empty_distance for v in Vehicles))/5280.0,2)
 
-    loaded_fleet_miles = sum(list(v.loaded_distance for v in Vehicles))
-    mean_loaded_veh_dist= numpy.mean(list(v.loaded_distance for v in Vehicles))
-    sd_loaded_veh_dist = numpy.std(list(v.loaded_distance for v in Vehicles))
+    loaded_fleet_miles = int(sum(list(v.loaded_distance for v in Vehicles))/5280.0)
+    mean_loaded_veh_dist= round(numpy.mean(list(v.loaded_distance for v in Vehicles))/5280.0,2)
+    sd_loaded_veh_dist = round(numpy.std(list(v.loaded_distance for v in Vehicles))/5280.0,2)
+
+    fleet_hours = ((mean_tot_veh_dist*5280.0)/veh_speed)/3600.0
+    fleet_utilization = round(fleet_hours/(T_max/3600.0),2)
+
 
     #Initialize Vector of Metrics
-    answer = []
-
-
-
-
-
-
-
-
-
-    
-    answer.append(len(pass_noAssign_Q))
-    answer.append(len(pass_noAssign_Q) + len(pass_noPick_Q))
-
+    sim_results = [num_metric_People, perc_Rideshare, perc_Reassigned,
+                   mean_ivtt, sd_ivtt, mean_wait_pick, sd_wait_pick, mean_wait_assgn, sd_wait_assgn,
+                   tot_fleet_miles, mean_tot_veh_dist, sd_tot_veh_dist,
+                   empty_fleet_miles, mean_empty_veh_dist, sd_empty_veh_dist,
+                   loaded_fleet_miles, mean_loaded_veh_dist, sd_loaded_veh_dist, fleet_utilization,
+                   num_served, num_inVeh, num_assgnd, num_unassgnd]
 
 
 
@@ -332,4 +328,4 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
 
 
 
-    return (answer)
+    return (sim_results)

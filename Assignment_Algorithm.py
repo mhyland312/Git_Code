@@ -27,7 +27,7 @@ def assign_veh(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_
     elif opt_method == "match_idlePickDrop":
         answer = idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, t)
     else:
-        print("no_assignment_method")
+        print("Error: No_assignment_method")
     return answer
 #############################################################################################################
 

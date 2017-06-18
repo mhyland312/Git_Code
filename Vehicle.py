@@ -108,7 +108,10 @@ def moveVehicle_manhat(t, vehicle, person, opt_method):
     if vehicle.state == "enroute_pickup":
         dest_x = person.pickup_location_x
         dest_y = person.pickup_location_y
-        vehicle.empty_distance += Settings.delta_veh_dist
+        if vehicle.current_load > 0:
+            vehicle.loaded_distance += Settings.delta_veh_dist
+        else:
+            vehicle.empty_distance += Settings.delta_veh_dist
 
     elif vehicle.state == "enroute_dropoff":
         dest_x = person.dropoff_location_x
