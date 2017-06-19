@@ -508,10 +508,15 @@ def update_Vehicle(t, person1, vehicle, opt_method):
 
             elif vehicle.state == "unassign":
                 vehicle.pass_toPickup = []
-                vehicle.current_dest_x = -1.0
-                vehicle.current_dest_y = -1.0
+
                 vehicle.next_pickup = Person.Person
-                vehicle.state = state_idle()
+
+                if vehicle.next_drop.person_id >= 0:
+                    vehicle.state = state_enroute_dropoff()
+                else:
+                    vehicle.state = state_idle()
+                    vehicle.current_dest_x = -1.0
+                    vehicle.current_dest_y = -1.0
 
 
             else:

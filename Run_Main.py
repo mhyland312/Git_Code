@@ -9,16 +9,16 @@ import time
 t0 = time.time()
 
 #fleet_size1 =  [j for j in range(120,131,3)]
-fleet_size2 =  [j for j in range(120,240,5)]
+fleet_size2 =  [j for j in range(160,221,30)]
 #fleet_size = fleet_size1 + fleet_size2
 fleet_size =  fleet_size2  #[250]
 
-#hold_for = [1, 3, 7, 15, 30]
-hold_for = [10]
+hold_for = [1, 3, 7, 15, 30]
+#hold_for = [10]
 
 
 #opt_methods = [ "FCFS_longestIdle", "FCFS_nearestIdle", "match_idleOnly", "match_idlePick", "match_idleDrop", "match_RS"]
-opt_methods = ["match_idleDrop"]
+opt_methods = [ "match_idleDrop", "match_idlePickDrop"]
 #opt_methods = ["match_idlePick"]
 
 csv_results2 = open('../Results/BigResults'+ '_holds' + str(len(hold_for)) + '_fleet' + str(len(fleet_size)) + '_opt' + str(len(opt_methods))  +'.csv', 'w')

@@ -427,11 +427,13 @@ def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pa
 
     all_veh = veh_idle_Q  + new_veh_drop_Q + veh_pick_Q
     tot_veh_length = len(all_veh)
+    #print("idle", len_veh_idle, "pick", len(veh_pick_Q), "drop", len(veh_drop_Q) )
 
     len_pass_noAssign = len(pass_noAssign_Q)
     len_pass_noPick = len(pass_noPick_Q)
     pass_noAssignPick_Q = pass_noAssign_Q + pass_noPick_Q
     len_pass_noPickAssign = len(pass_noAssignPick_Q)
+    #print("noAssign", len_pass_noAssign, "noPick", len_pass_noPick )
 
     Pass_Veh_assign = [[pass_noAssignPick_Q[n], Vehicle.Vehicle] for n in range(len_pass_noPickAssign) ]
 
@@ -453,18 +455,18 @@ def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pa
                 elif count_veh < len_veh_idle + len_veh_new_drop:
                     distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - cur_wait*50.0
                 else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.veh_speed*20 + j_veh.reassign*100000
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.veh_speed*Set.penalty_reassign + j_veh.reassign*100000
 
             else:
                 prev_assign[count_pass] = 1
                 if j_veh.next_pickup == i_pass:
                     distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
                 elif count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.veh_speed*20
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.veh_speed*Set.penalty_reassign
                 elif count_veh < len_veh_idle + len_veh_new_drop:
-                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.veh_speed*20
+                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.veh_speed*Set.penalty_reassign
                 else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + 2*Set.veh_speed*20 + j_veh.reassign*100000
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + 2*Set.veh_speed*Set.penalty_reassign  + j_veh.reassign*100000
 
 
 
@@ -481,8 +483,8 @@ def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pa
     #constraints
 
     #Previously assigned passengers must be assigned a vehicle
-    #for ii in range(len_pass_noPickAssign):
-     #   models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) - prev_assign[ii] >= 0)
+    for ii in range(len_pass_noPickAssign):
+        models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) - prev_assign[ii] >= 0)
 
     if (len_pass_noPickAssign <= tot_veh_length):
         for ii in range(len_pass_noPickAssign):
