@@ -1,6 +1,6 @@
 __author__ = 'Mike'
 
-import Settings
+import Settings as Set
 import Initialize as Init
 import Main
 import csv
@@ -8,44 +8,57 @@ import time
 
 t0 = time.time()
 
-#fleet_size1 =  [j for j in range(120,131,3)]
-fleet_size2 =  [j for j in range(160,221,30)]
+#area_size_miles = [8.0, 6.0, 4.0]
+area_size_miles = [6.0]
+area_size = [x * 5280.0 for x in area_size_miles]
+
+requests_per_hour = [1500]
+
+demand_Type = [ "O_Cluster_D_Cluster"]
+#demand_Type = ["O_Uniform_D_Uniform", "O_Uniform_D_Cluster",]
+
+#fleet_size1 =  [j for j in range(250,300,20)]
+fleet_size2 =  [j for j in range(450, 451, 500)]
 #fleet_size = fleet_size1 + fleet_size2
 fleet_size =  fleet_size2  #[250]
 
-hold_for = [1, 3, 7, 15, 30]
-#hold_for = [10]
+hold_for = [15]
 
 
-#opt_methods = [ "FCFS_longestIdle", "FCFS_nearestIdle", "match_idleOnly", "match_idlePick", "match_idleDrop", "match_RS"]
-opt_methods = [ "match_idleDrop", "match_idlePickDrop"]
-#opt_methods = ["match_idlePick"]
+opt_methods = [ "FCFS_longestIdle", "FCFS_nearestIdle", "match_idleOnly", "match_idlePick", "match_idleDrop", "match_idlePickDrop", "match_RS"]
+#opt_methods = [ "match_idleDrop", "match_idlePickDrop"]
+#opt_methods = ["match_idlePickDrop"]
 
 csv_results2 = open('../Results/BigResults'+ '_holds' + str(len(hold_for)) + '_fleet' + str(len(fleet_size)) + '_opt' + str(len(opt_methods))  +'.csv', 'w')
 results_writer2 = csv.writer(csv_results2, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
-results_writer2.writerow(["demand set" , "opt method", "hold time" , "fleet size", "num metric people",
+results_writer2.writerow(["run#", "simulation length", "demand_type", "area_size", "opt method", "hold time" , "fleet size",
+                          "num metric people",
                           "% Rideshare", "% Reassigned",
                           "mean ivtt", "sd ivtt", "mean wait pick", "sd wait pick", "mean wait assgn", "sd wait assign",
+                          "mean trip dist", "sd trip dist",
                           "fleet miles - all veh", "mean dist - all veh", "sd dist - all veh",
-                          "fleet miles - empty veh", "mean dist - empty veh", "sd dist - empty veh",
-                          "fleet miles - loaded veh", "mean dist - loaded veh", "sd dist - loaded veh", "fleet_utilization",
+                          "fleet miles - empty veh",
+                          "% empty_miles", "fleet_utilization",
+                          "mean % increase RS IVTT", "sd % increase RS IVTT",
                           "served", "in vehicle", "assigned", "unassigned"])
                          
 for i_run in range(0,1):
-    #generate random demand
-    Init.generate_Demand(Settings.T_max, Settings.num_requests, Settings.max_distance,  Settings.max_groupSize)
-    for j_fleet_size in fleet_size:
-        #generate fleet 
-        Init.generate_Fleet(Settings.max_distance,j_fleet_size, Settings.veh_capacity)
-        for k_hold_for in hold_for:
-            for m_opt_method in opt_methods:
+    for p_demand_type in demand_Type:
+        for q_area_size in area_size:
+            #generate random demand
+            Init.generate_Demand(Set.T_max, requests_per_hour[0], q_area_size,  Set.max_groupSize, p_demand_type)
+            for j_fleet_size in fleet_size:
+                #generate fleet
+                Init.generate_Fleet(q_area_size, j_fleet_size, Set.veh_capacity)
+                for k_hold_for in hold_for:
+                    for m_opt_method in opt_methods:
 
-                print("run # ", i_run, "fleet size ", j_fleet_size, "hold for ", k_hold_for, "Opt Method ", m_opt_method)
-                #run simulation
-                results = Main.Main(k_hold_for, Settings.T_max, Settings.time_step, m_opt_method, Settings.veh_speed)
-                print(results)                
-                results_writer2.writerow([ i_run, m_opt_method, k_hold_for, j_fleet_size, results])
-                print(time.time() - t0)
+                        print("run # ", i_run, "fleet size ", j_fleet_size, "hold for ", k_hold_for, "Opt Method ", m_opt_method)
+                        #run simulation
+                        results = Main.Main(k_hold_for, Set.T_max, Set.time_step, m_opt_method, Set.veh_speed)
+                        print(results)
+                        results_writer2.writerow([ i_run, Set.T_max, p_demand_type, q_area_size/5280, m_opt_method, k_hold_for, j_fleet_size, results])
+                        print(time.time() - t0)
                                           
 
 csv_results2.close()

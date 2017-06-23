@@ -22,7 +22,7 @@ class Vehicle(object):
     next_pickup = Person.Person
     next_drop = Person.Person
     state = "string"
-    reassign = 0
+    reassigned = 0
 
     #output information - update throughout simulation
     total_distance = 0.0
@@ -57,7 +57,7 @@ class Vehicle(object):
         self.next_pickup = Person.Person
         self.next_drop = Person.Person
         self.state = state
-        self.reassign = 0
+        self.reassigned = 0
 
         #output information - update throughout simulation
         self.total_distance = 0.0
@@ -399,7 +399,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.pass_dropped_list.append(person1.person_id)
                 vehicle.dropoff_times.append(t)
                 vehicle.pass_drop_count += 1
-                vehicle.reassign = 0
+                vehicle.reassigned = 0
 
             #was en_route to  pickup, but have been reassigned
             elif vehicle.state == "reassign":
@@ -415,7 +415,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.pass_assgn_list.append(person1.person_id)
                 vehicle.assigned_times.append(t)
                 vehicle.pass_assgn_count += 1
-                vehicle.reassign = 1
+                vehicle.reassigned = 1
 
             elif vehicle.state == "unassign":
                 vehicle.pass_toPickup = []
@@ -423,6 +423,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.current_dest_y = -1.0
                 vehicle.next_pickup = Person.Person
                 vehicle.state = state_idle()
+                vehicle.reassigned = 0
 
 
             else:
@@ -478,10 +479,13 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.pass_dropped_list.append(person1.person_id)
                 vehicle.dropoff_times.append(t)
                 vehicle.pass_drop_count += 1
-                vehicle.reassign = 0
+                vehicle.reassigned = 0
 
             #another case unique to this opt method. enroute dropoff vehicle assigned to next passenger
             elif vehicle.state == "new_assign":
+                if vehicle.next_pickup.person_id >= 0:
+                    vehicle.pass_toPickup.remove(vehicle.pass_toPickup[0])
+
                 vehicle.pass_toPickup.append(person1)
                 vehicle.next_pickup = person1
                 vehicle.state = state_enroute_dropoff()
@@ -504,10 +508,11 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.pass_assgn_list.append(person1.person_id)
                 vehicle.assigned_times.append(t)
                 vehicle.pass_assgn_count += 1
-                vehicle.reassign = 1
+                vehicle.reassigned = 1
 
             elif vehicle.state == "unassign":
                 vehicle.pass_toPickup = []
+                vehicle.reassigned = 0
 
                 vehicle.next_pickup = Person.Person
 
