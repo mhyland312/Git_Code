@@ -17,7 +17,7 @@ delta_veh_dist = veh_speed * time_step #feet
 inf = 10000000000000
 
 
-RS_penalty = 30 * veh_speed #30seconds * veh_speed
+pen_RS = 30.0 #30seconds * veh_speed
 wait_time_multi =  50.0
 
 demand_Dist = "O_Uniform_D_Uniform" #"O_Uniform_D_Transit" "O_Uniform_D_Cluster"
@@ -31,4 +31,5 @@ min_improve_min = 1.5
 min_improve_ft = min_improve_min * 60 * veh_speed
 
 
-penalty_reassign = 20.0 #seconds
+pen_reassign = 15.0 #seconds
+pen_drop_time = 30.0

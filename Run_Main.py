@@ -8,17 +8,17 @@ import time
 
 t0 = time.time()
 
-#area_size_miles = [8.0, 6.0, 4.0]
-area_size_miles = [6.0]
+area_size_miles = [8.0, 6.0, 4.0]
+#area_size_miles = [6.0]
 area_size = [x * 5280.0 for x in area_size_miles]
 
-requests_per_hour = [1500]
+requests_per_hour = [1000]
 
-demand_Type = [ "O_Cluster_D_Cluster"]
-#demand_Type = ["O_Uniform_D_Uniform", "O_Uniform_D_Cluster",]
+#demand_Type = [ "O_Cluster_D_Cluster"]
+demand_Type = ["O_Uniform_D_Uniform", "O_Uniform_D_Cluster", "O_Cluster_D_Cluster"]
 
 #fleet_size1 =  [j for j in range(250,300,20)]
-fleet_size2 =  [j for j in range(450, 451, 500)]
+fleet_size2 =  [j for j in range(200, 350, 30)]
 #fleet_size = fleet_size1 + fleet_size2
 fleet_size =  fleet_size2  #[250]
 
@@ -42,18 +42,19 @@ results_writer2.writerow(["run#", "simulation length", "demand_type", "area_size
                           "mean % increase RS IVTT", "sd % increase RS IVTT",
                           "served", "in vehicle", "assigned", "unassigned"])
                          
-for i_run in range(0,1):
+for i_run in range(0,2):
     for p_demand_type in demand_Type:
         for q_area_size in area_size:
             #generate random demand
             Init.generate_Demand(Set.T_max, requests_per_hour[0], q_area_size,  Set.max_groupSize, p_demand_type)
             for j_fleet_size in fleet_size:
+                jj_fleet_size = j_fleet_size + int(((q_area_size/5280.0)-4.0)*30)
                 #generate fleet
-                Init.generate_Fleet(q_area_size, j_fleet_size, Set.veh_capacity)
+                Init.generate_Fleet(q_area_size, jj_fleet_size, Set.veh_capacity)
                 for k_hold_for in hold_for:
                     for m_opt_method in opt_methods:
 
-                        print("run # ", i_run, "fleet size ", j_fleet_size, "hold for ", k_hold_for, "Opt Method ", m_opt_method)
+                        print("run # ", i_run, "fleet size ", jj_fleet_size, "hold for ", k_hold_for, "Opt Method ", m_opt_method)
                         #run simulation
                         results = Main.Main(k_hold_for, Set.T_max, Set.time_step, m_opt_method, Set.veh_speed)
                         print(results)

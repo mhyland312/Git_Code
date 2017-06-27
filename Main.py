@@ -69,6 +69,8 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
     check = 0
     used_vehicles = []
     for t in range(0, T_max, time_step ):
+        if len(veh_idle_Q) + len(veh_pick_Q) + len(veh_drop_Q) != len(Vehicles):
+            sys.exit("something wrong with vehicle queues")
 
     # move en_route dropoff vehicles
         for i_veh_drop in veh_drop_Q:
@@ -125,6 +127,7 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
         if t%hold_for == 0:
             if len(pass_noAssign_Q) > 0 and len(veh_idle_Q) > 0: #Mike - probably want to check removing second if condition
                 #return index of vehicle_idle_queue for every passenger
+                #reassgn_veh_pick_Q = list(v for v in veh_pick_Q if v.reassigned == 1)
                 pass_veh_assgn = AA.assign_veh(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, opt_method, t)
 
                 remaining_persons = []
@@ -132,7 +135,8 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
                 used_vehicles = []
                 old_veh_pick_Q = veh_pick_Q[0:len(veh_pick_Q)]
                 for [i_pass, j_vehicle] in pass_veh_assgn:
-
+                    if i_pass.person_id == 455:
+                        miker = 1
 
                     #passenger is not assigned to a real vehicle, and the person is real
                     if j_vehicle.vehicle_id < 0 and i_pass.person_id >= 0 :  #Mike - look to remove second condition
@@ -226,7 +230,7 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
 
                 if opt_method == "match_idlePickDrop":
                     for abc_veh in check_used_vehicles:
-                        if abc_veh not in used_vehicles:
+                        if abc_veh not in used_vehicles: #and abc_veh not in reassgn_veh_pick_Q:
                             abc_veh.state = "unassign"
                             Vehicles[abc_veh.vehicle_id] = Vehicle.update_Vehicle(t, Person.Person, abc_veh, opt_method)
                             if abc_veh in veh_pick_Q:

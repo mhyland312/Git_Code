@@ -2,6 +2,7 @@ __author__ = 'Mike'
 
 import Settings
 import Person
+import sys
 
 
 class Vehicle(object):
@@ -119,11 +120,11 @@ def moveVehicle_manhat(t, vehicle, person, opt_method):
         vehicle.loaded_distance += Settings.delta_veh_dist
 
     else:
-        print("Error in moveVehicle_manhat - wrong vehicle state")
+        sys.exit("Error in moveVehicle_manhat - wrong vehicle state")
     
     #check for bugs - keep in code
     if dest_x <= 0.0 or dest_y <= 0.0:
-        print("Error in moveVehicle_manhat - inproper vehicle-person match")
+        sys.exit("Error in moveVehicle_manhat - improper vehicle-person match")
             
     veh_x = vehicle.position_x
     veh_y = vehicle.position_y
@@ -427,7 +428,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
 
 
             else:
-                print("Error No Proper State - Opt Method 4")
+                sys.exit("Error No Proper State - Opt Method 4")
 
 
     #Opt method 5
@@ -525,7 +526,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
 
 
             else:
-                print("Error No Proper State - Opt Method 5")
+                sys.exit("Error No Proper State - Opt Method 5")
 
 
     return vehicle

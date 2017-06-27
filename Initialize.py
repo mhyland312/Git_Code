@@ -16,11 +16,15 @@ def generate_Demand(T_max, requests_per_hour, max_distance, max_groupSize, deman
     demand_time = numpy.random.exponential(lambd, num_requests)
     demand_time = numpy.cumsum(demand_time)
 
-    drop_x = []
-    drop_y = []
-    for i in range(4):
-        drop_x.append((round(max_distance*random.random(), 4)))
-        drop_y.append((round(max_distance*random.random(), 4)))
+    #cluster_x = []
+    #cluster_y = []
+    #for i in range(4):
+    #    cluster_x.append( (int(0.7*max_distance*random.random() + 0.15*max_distance)))
+    #    cluster_y.append( (int(0.7*max_distance*random.random() + 0.15*max_distance)))
+    temp_x = [0.2, 0.2, 0.8, 0.8]
+    cluster_x = [x*max_distance for x in temp_x]
+    temp_y = [0.2, 0.8, 0.2, 0.8]
+    cluster_y = [y*max_distance for y in temp_y]
 
 
     csvDemandFile = open('../Inputs/Demand_Requests.csv', 'w')
@@ -32,29 +36,50 @@ def generate_Demand(T_max, requests_per_hour, max_distance, max_groupSize, deman
         temp_dist = 0
 
         while temp_dist < 0.8 * 5280.0:
+
             if demand_type == "O_Uniform_D_Uniform":
                 c = (round(max_distance*random.random(), 4))
                 d = (round(max_distance*random.random(), 4))
                 e = (round(max_distance*random.random(), 4))
                 f = (round(max_distance*random.random(), 4))
                 temp_dist = abs(c-e) + abs(d-f)
+
+
             elif demand_type == "O_Uniform_D_Cluster":
                 c = (round(max_distance*random.random(), 4))
                 d = (round(max_distance*random.random(), 4))
                 drop_select = random.randint(0,3)
-                e = drop_x[drop_select] + (round(numpy.random.normal(0, 0.4*5280, 1)[0], 4))
-                f = drop_y[drop_select] + (round(numpy.random.normal(0, 0.4*5280, 1)[0], 4))
+
+                e = cluster_x[drop_select] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
+                while e < 0:
+                    e = cluster_x[drop_select] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
+                f = cluster_y[drop_select] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
+                while f < 0:
+                    f = cluster_y[drop_select] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
+
                 temp_dist = abs(c-e) + abs(d-f)
+
+
             elif demand_type == "O_Cluster_D_Cluster":
                 origin = random.randint(0,3)
                 dest = random.randint(0,3)
-                while origin != dest:
+                while origin == dest:
                     origin = random.randint(0,3)
                     dest = random.randint(0,3)
-                c = drop_x[origin] + (round(numpy.random.normal(0, 0.4*5280, 1)[0], 4))
-                d = drop_y[origin] + (round(numpy.random.normal(0, 0.4*5280, 1)[0], 4))
-                e = drop_x[dest] + (round(numpy.random.normal(0, 0.4*5280, 1)[0], 4))
-                f = drop_y[dest] + (round(numpy.random.normal(0, 0.4*5280, 1)[0], 4))
+
+                c = cluster_x[origin] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
+                while c < 0:
+                    c = cluster_x[origin] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
+                d = cluster_y[origin] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
+                while d < 0:
+                    d = cluster_y[origin] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
+
+                e = cluster_x[dest] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
+                while e < 0:
+                    e = cluster_x[dest] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
+                f = cluster_y[dest] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
+                while f < 0:
+                    f = cluster_y[dest] + (round(numpy.random.normal(0, 0.05*max_distance, 1)[0], 4))
                 temp_dist = abs(c-e) + abs(d-f)
             else:
                 print("Error: Need Demand Distribution")
@@ -69,12 +94,22 @@ def generate_Fleet( max_distance, num_vehicles, veh_capacity):
     csvVehicleFile = open('../Inputs/Vehicles.csv', 'w')
     writer = csv.writer(csvVehicleFile, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
     writer.writerow(["vehicle_id", "start_x", "start_y", "capacity"])
+
+    temp_x = [0.2, 0.2, 0.7, 0.7]
+    cluster_x = [xx*max_distance for xx in temp_x]
+    temp_y = [0.2, 0.7, 0.2, 0.7]
+    cluster_y = [yy*max_distance for yy in temp_y]
+
+
     for j in range(num_vehicles):
-        z = j
-        y = (round(max_distance*random.random(), 4))
-        x = (round(max_distance*random.random(), 4))
-        w = veh_capacity
-        rw = [z, y, x, w]
+        id = j
+        depot_num = random.randint(0,3)
+        x = cluster_x[depot_num]
+        y = cluster_y[depot_num]
+        #x = (round(max_distance*random.random(), 4))
+        #y = (round(max_distance*random.random(), 4))
+        cap = veh_capacity
+        rw = [id, x, y, cap]
         writer.writerow(rw)
     csvVehicleFile.close()
 
