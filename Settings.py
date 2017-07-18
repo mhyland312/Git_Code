@@ -33,3 +33,8 @@ min_improve_ft = min_improve_min * 60 * veh_speed
 
 pen_reassign = 15.0 #seconds
 pen_drop_time = 30.0
+
+
+#converts wait time units to distance units
+#1 minute wait = 60 seconds = 3000 ft = 0.57 miles
+gamma = 50.0

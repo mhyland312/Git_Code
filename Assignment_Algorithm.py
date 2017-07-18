@@ -92,7 +92,7 @@ def idleOnly_minDist(veh_idle_Q, pass_noAssign_Q, t):
         cur_wait = t - i_pass.request_time
         for j_veh in veh_idle_Q:
             count_veh += 1
-            distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait * 50.0
+            distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait * Set.gamma
 
     #Model
     models = gurobipy.Model("idleOnly_minDist")
@@ -160,12 +160,12 @@ def idleDrop_RS(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
         for j_veh in veh_idle_n_drop_Q:
             count_veh += 1
             if count_veh < len_veh_idle:
-                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
+                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma
                 dist_idle[count_veh] = Distance.dist_manhat(i_pass, j_veh)
 
             #if vehicle state is enroute_dropoff - need to add penalty for going out of way
             else:
-                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) + Set.pen_RS*Set.veh_speed - cur_wait*50.0
+                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) + Set.pen_RS*Set.veh_speed - cur_wait * Set.gamma
                 min_dist_idle = min(dist_idle)
 
                 #rideshare must reduce wait distance by 20% relative to nearest idle vehicle
@@ -280,9 +280,9 @@ def idleDrop_minDist(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
             count_veh += 1
             #if vehicle state is enroute_dropoff - need to include dropoff distance as well
             if count_veh >= len_veh_idle:
-                distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.pen_drop_time*Set.veh_speed
+                distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma + Set.pen_drop_time*Set.veh_speed
             else:
-                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
+                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma
             
     #Model
     models = gurobipy.Model("idleDrop_minDist")
@@ -354,9 +354,9 @@ def idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t):
 
             if count_pass < len_pass_noAssign:
                 if count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma
                 else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.veh_speed*20 + j_veh.reassigned*100000
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma + Set.veh_speed*20 + j_veh.reassigned*100000
 
             else:
                 if i_pass.reassigned == 1:
@@ -365,11 +365,11 @@ def idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t):
 
                 prev_assign[count_pass] = 1
                 if j_veh.next_pickup == i_pass:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma
                 elif count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.veh_speed*Set.pen_reassign + i_pass.reassigned*100000
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma + Set.veh_speed*Set.pen_reassign + i_pass.reassigned*100000
                 else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + 2*Set.veh_speed*Set.pen_reassign + j_veh.reassigned*100000 + i_pass.reassigned*100000
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma + 2*Set.veh_speed*Set.pen_reassign + j_veh.reassigned*100000 + i_pass.reassigned*100000
 
     #Model
     models = gurobipy.Model("idlePick_minDist")
@@ -464,22 +464,22 @@ def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pa
 
             if count_pass < len_pass_noAssign:
                 if count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma
                 elif count_veh < len_veh_idle + len_veh_drop:
-                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.pen_drop_time*Set.veh_speed
+                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma + Set.pen_drop_time*Set.veh_speed
                 else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.veh_speed*Set.pen_reassign + j_veh.reassigned*100000
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma + Set.veh_speed*Set.pen_reassign + j_veh.reassigned*100000
 
             else:
                 prev_assign[count_pass] = 1
                 if j_veh.next_pickup == i_pass:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma
                 elif count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.veh_speed*Set.pen_reassign + i_pass.reassigned*100000
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma + Set.veh_speed*Set.pen_reassign + i_pass.reassigned*100000
                 elif count_veh < len_veh_idle + len_veh_drop:
-                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.pen_drop_time*Set.veh_speed + Set.veh_speed*Set.pen_reassign + i_pass.reassigned*100000
+                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma + Set.pen_drop_time*Set.veh_speed + Set.veh_speed*Set.pen_reassign + i_pass.reassigned*100000
                 else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + 2*Set.veh_speed*Set.pen_reassign  + j_veh.reassigned*100000 + i_pass.reassigned*100000
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*Set.gamma + 2*Set.veh_speed*Set.pen_reassign  + j_veh.reassigned*100000 + i_pass.reassigned*100000
 
 
 

@@ -150,7 +150,7 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
                 for [i_pass, j_vehicle] in pass_veh_assgn:
 
                     #passenger is not assigned to a real vehicle, and the person is real
-                    if j_vehicle.vehicle_id < 0 and i_pass.person_id >= 0 :  #Mike - look to remove second condition
+                    if j_vehicle.vehicle_id < 0: # and i_pass.person_id >= 0:
                         remaining_persons.append(i_pass)
                         if i_pass in pass_noPick_Q:
                             pass_noPick_Q.remove(i_pass)

@@ -54,7 +54,8 @@ for i_run in range(0,3):
                     for k_hold_for in hold_for:
                         for m_opt_method in opt_methods:
 
-                            print("run # ", i_run, "fleet size ", jj_fleet_size, "hold for ", k_hold_for, "Opt Method ", m_opt_method)
+                            print("run #:", i_run, " demand rate:", a_demand_rate, " demand type:", p_demand_type, " area size:", q_area_size/5280)
+                            print("fleet size:", jj_fleet_size, " hold for:", k_hold_for, " Opt Method:", m_opt_method)
                             #run simulation
                             results = Main.Main(k_hold_for, Set.T_max, Set.time_step, m_opt_method, Set.veh_speed)
                             print(results)
