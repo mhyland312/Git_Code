@@ -337,7 +337,10 @@ def idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t):
     
     distM = [[0 for j in range(len_veh_idle_n_pick)] for i in range(len_pass_noPickAssign)]
     x = [[0 for j in range(len_veh_idle_n_pick)] for i in range(len_pass_noPickAssign)]
+    y = [[0 for j in range(len_veh_idle_n_pick)] for i in range(len_pass_noPickAssign)]
     prev_assign = [0 for i in range(len_pass_noPickAssign)]
+
+
 
     count_pass = -1
     for i_pass in pass_noAssignPick_Q:
@@ -347,6 +350,8 @@ def idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t):
         for j_veh in veh_idle_n_pick:
             count_veh += 1
 
+
+
             if count_pass < len_pass_noAssign:
                 if count_veh < len_veh_idle:
                     distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
@@ -354,6 +359,10 @@ def idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t):
                     distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0 + Set.veh_speed*20 + j_veh.reassigned*100000
 
             else:
+                if i_pass.reassigned == 1:
+                    if j_veh.next_pickup.person_id == i_pass.person_id:
+                        y[count_pass][count_veh] = 1
+
                 prev_assign[count_pass] = 1
                 if j_veh.next_pickup == i_pass:
                     distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - cur_wait*50.0
@@ -373,6 +382,9 @@ def idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t):
     models.update()
 
     #constraints
+    # for ii in range(len_pass_noPickAssign):
+    #     for jj in range(len_veh_idle_n_pick):
+    #         models.addConstr(y[ii][jj] - x[ii][jj] <= 0)
 
     #Previously assigned passengers must be assigned a vehicle
     for ii in range(len_pass_noPickAssign):
@@ -407,14 +419,22 @@ def idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t):
 #############################################################################################################
 def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, t):
 
-    #new_veh_drop_Q = []
-    #for a_veh in veh_drop_Q:
-    #    if a_veh.next_pickup.person_id < 0:
-    #        new_veh_drop_Q.append(a_veh)
+    # reassign_pass = []
+    # reassign_veh = []
+    #
+    # num_reassigned = 0
+    # for j_car in veh_pick_Q:
+    #     if j_car.next_pickup.reassigned == 1:
+    #         num_reassigned += 1
+    #
+    #         reassign_pass.append(j_car.next_pickup)
+    #         reassign_veh.append(j_car)
+    #
+    #         veh_pick_Q.remove(j_car)
+    #         pass_noPick_Q.remove(j_car.next_pickup)
 
-    new_veh_drop_Q = []
-    for a_veh in veh_drop_Q:
-        new_veh_drop_Q.append(a_veh)
+
+    #Pass_Veh_assign2 = [[reassign_pass[n], reassign_veh[n]] for n in range(num_reassigned) ]
 
     len_veh_idle = len(veh_idle_Q)
     len_veh_drop = len(veh_drop_Q)
@@ -501,6 +521,8 @@ def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pa
                     break
     else:
         sys.exit("No Optimal Solution - idlePickDrop_minDist")
+
+    #Pass_Veh_assign = Pass_Veh_assign + Pass_Veh_assign2
     return (Pass_Veh_assign)
 #############################################################################################################
 

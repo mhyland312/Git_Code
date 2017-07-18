@@ -126,17 +126,28 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
     #Every X seconds assign passengers in the waiting queue to a vehicle
         if t%hold_for == 0:
             if len(pass_noAssign_Q) > 0 and len(veh_idle_Q) > 0: #Mike - probably want to check removing second if condition
-                #return index of vehicle_idle_queue for every passenger
-                #reassgn_veh_pick_Q = list(v for v in veh_pick_Q if v.reassigned == 1)
+
+                # reassign_pass = []
+                # reassign_veh = []
+                #
+                # #num_reassigned = 0
+                # for j_car in veh_pick_Q:
+                #     if j_car.next_pickup.reassigned == 1:
+                #         #num_reassigned += 1
+                #
+                #         #reassign_pass.append(j_car.next_pickup)
+                #         reassign_veh.append(j_car)
+                #
+                #         #veh_pick_Q.remove(j_car)
+                #         #pass_noPick_Q.remove(j_car.next_pickup)
+
                 pass_veh_assgn = AA.assign_veh(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, opt_method, t)
 
                 remaining_persons = []
-                check_used_vehicles = used_vehicles[0:len(used_vehicles)]
+                check_used_vehicles = used_vehicles[0:len(used_vehicles)] #used_vehicles + reassign_veh
                 used_vehicles = []
                 old_veh_pick_Q = veh_pick_Q[0:len(veh_pick_Q)]
                 for [i_pass, j_vehicle] in pass_veh_assgn:
-                    if i_pass.person_id == 455:
-                        miker = 1
 
                     #passenger is not assigned to a real vehicle, and the person is real
                     if j_vehicle.vehicle_id < 0 and i_pass.person_id >= 0 :  #Mike - look to remove second condition
