@@ -1,5 +1,6 @@
 __author__ = 'Mike'
 
+import sys
 
 class Person(object):
     person_id = -1
@@ -108,3 +109,28 @@ def update_Person(t, person_1, vehicle1):
         person_1.travel_time = calculate_travel_time(person_1.pickup_time, person_1.dropoff_time)
 
     return person_1
+
+
+def update_Person_Assgnmnt(t, person_2, vehicle_2):
+
+    #if traveler is not assigned to an AV
+    if vehicle_2.vehicle_id < 0:
+        if person_2.state == "assigned":
+            sys.exit("Error - Traveler went from assigned to unassigned! ")
+
+    #assigned to same vehicle
+    elif vehicle_2.vehicle_id == person_2.vehicle_id:
+        same_vehicle = 1
+
+    else:
+
+        person_2.assign_time.append(t)
+        person_2.wait_assgn_time.append(t - person_2.request_time)
+        person_2.vehicle_id = vehicle_2.vehicle_id
+        person_2.old_vehicles.append(vehicle_2.vehicle_id)
+        person_2.state = state_assigned()
+        if len(person_2.old_vehicles) > 0:
+            person_2.reassigned = 1
+        #rideshare = 0
+
+    return person_2

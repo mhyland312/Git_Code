@@ -18,6 +18,8 @@ inf = 10000000000000
 
 
 pen_RS = 30.0 #30seconds * veh_speed
+shared_ride_penalty = pen_RS * veh_speed
+
 wait_time_multi =  50.0
 
 demand_Dist = "O_Uniform_D_Uniform" #"O_Uniform_D_Transit" "O_Uniform_D_Cluster"
@@ -32,7 +34,13 @@ min_improve_ft = min_improve_min * 60 * veh_speed
 
 
 pen_reassign = 15.0 #seconds
+reassign_penalty = pen_reassign * veh_speed
+
+
 pen_drop_time = 30.0
+dropoff_penalty = pen_drop_time * veh_speed
+
+
 
 
 #converts wait time units to distance units

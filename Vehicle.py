@@ -162,8 +162,27 @@ def get_next_drop(vehicle):
             Win_Pass = i_pass
     return Win_Pass
 ##############################################################################
-    
-    
+
+
+
+##############################################################################
+def update_Vehicle_Assgnmnt(t, person_2, vehicle_2):
+    #check to see if Vehicle is real!
+    vehicle_2.pass_toPickup.insert(0,person_2)
+    vehicle_2.current_dest_x = person_2.pickup_location_x
+    vehicle_2.current_dest_y = person_2.pickup_location_y
+    if vehicle_2.next_pickup.person_id >= 0 and vehicle_2.next_pickup.person_id != person_2.person_id:
+        vehicle_2.reassigned = 1
+    vehicle_2.next_pickup = person_2
+    vehicle_2.state = state_enroute_pickup()
+
+    vehicle_2.pass_assgn_list.append(person_2)
+    vehicle_2.assigned_times.append(t)
+    vehicle_2.pass_assgn_count += 1
+##############################################################################
+
+
+
 ##############################################################################
 # vehicle is changing states - needs to be updated
 def update_Vehicle(t, person1, vehicle, opt_method):

@@ -12,20 +12,20 @@ t0 = time.time()
 area_size_miles = [8.0, 6.0, 4.0]
 area_size = [x * 5280.0 for x in area_size_miles]
 
-requests_per_hour = [850, 900, 950, 1000, 1050]
+requests_per_hour = [900, 1000, 1100, 1200, 1300]
 
-#demand_Type = [ "O_Uniform_D_Uniform"]
-demand_Type = ["O_Uniform_D_Uniform", "O_Uniform_D_Cluster", "O_Cluster_D_Cluster"]
+#demand_Type = [ "O_Uniform_D_Uniform" "O_Uniform_D_Cluster",]
+demand_Type = ["O_Uniform_D_Uniform",  "O_Cluster_D_Cluster"]
 
-fleet_size1 =  [j for j in range(160,181,10)]
-fleet_size2 =  [j for j in range(210, 300, 25)]
+#fleet_size1 =  [j for j in range(160,181,10)]
+#fleet_size2 =  [j for j in range(210, 300, 25)]
 #fleet_size = fleet_size1 + fleet_size2
-fleet_size =  [150]
+fleet_size =  [175]
 
 hold_for = [10]
 
 #opt_methods = [ "FCFS_longestIdle", "FCFS_nearestIdle", "match_idleOnly", "match_idlePick", "match_idleDrop", "match_idlePickDrop", "match_RS"]
-#opt_methods = [ "match_idleDrop", "match_idlePickDrop"]
+#opt_methods = ["match_RS"]
 opt_methods = ["match_idlePickDrop", "match_RS"]
 
 csv_results2 = open('../Results/BigResults'+ '_holds' + str(len(hold_for)) + '_fleet' + str(len(fleet_size)) + '_opt' + str(len(opt_methods))  +'.csv', 'w')
@@ -41,7 +41,7 @@ results_writer2.writerow(["Run#", "Simulation Length", "Requests Per Hour", "Dem
                           "mean % increase RS IVTT", "sd % increase RS IVTT",
                           "served", "in vehicle", "assigned", "unassigned"])
                          
-for i_run in range(0,3):
+for i_run in range(0,5):
     for a_demand_rate in requests_per_hour:
         for p_demand_type in demand_Type:
             for q_area_size in area_size:

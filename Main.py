@@ -127,21 +127,18 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
         if t%hold_for == 0:
             if len(pass_noAssign_Q) > 0 and len(veh_idle_Q) > 0: #Mike - probably want to check removing second if condition
 
-                # reassign_pass = []
-                # reassign_veh = []
-                #
-                # #num_reassigned = 0
-                # for j_car in veh_pick_Q:
-                #     if j_car.next_pickup.reassigned == 1:
-                #         #num_reassigned += 1
-                #
-                #         #reassign_pass.append(j_car.next_pickup)
-                #         reassign_veh.append(j_car)
-                #
-                #         #veh_pick_Q.remove(j_car)
-                #         #pass_noPick_Q.remove(j_car.next_pickup)
+                pass_veh_assign1 = []
+                temp_veh_pick_Q = veh_pick_Q[0:len(veh_pick_Q)]
+                temp_pass_noPick_Q = pass_noPick_Q[0:len(pass_noPick_Q)]
 
-                pass_veh_assgn = AA.assign_veh(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, opt_method, t)
+                for j_car in veh_pick_Q:
+                    if j_car.next_pickup.reassigned == 1:
+                        pass_veh_assign1.append([j_car.next_pickup, j_car])
+                        temp_veh_pick_Q.remove(j_car)
+                        temp_pass_noPick_Q.remove(j_car.next_pickup)
+
+                pass_veh_assign2 = AA.assign_veh(veh_idle_Q, temp_veh_pick_Q, veh_drop_Q, pass_noAssign_Q, temp_pass_noPick_Q, opt_method, t)
+                pass_veh_assgn = pass_veh_assign2 + pass_veh_assign1
 
                 remaining_persons = []
                 check_used_vehicles = used_vehicles[0:len(used_vehicles)] #used_vehicles + reassign_veh
@@ -150,12 +147,13 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
                 for [i_pass, j_vehicle] in pass_veh_assgn:
 
                     #passenger is not assigned to a real vehicle, and the person is real
-                    if j_vehicle.vehicle_id < 0: # and i_pass.person_id >= 0:
+                    if j_vehicle.vehicle_id < 0: # and i_pass.person_id >= 0 :  #Mike - look to remove second condition
                         remaining_persons.append(i_pass)
                         if i_pass in pass_noPick_Q:
-                            pass_noPick_Q.remove(i_pass)
-                            People[i_pass.person_id].state = "unassigned"
-                            People[i_pass.person_id].vehicle_id = -4
+                            sys.exit("Error - traveler was assigned, now is unassigned")
+                            #pass_noPick_Q.remove(i_pass)
+                            #People[i_pass.person_id].state = "unassigned"
+                            #People[i_pass.person_id].vehicle_id = -4
 
                     #passenger re-assigned to vehicle he/she already were assigned to
                     elif j_vehicle.next_pickup == i_pass:
@@ -169,55 +167,40 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
                         if j_vehicle in veh_idle_Q:
 
                             #if passenger already had a vehicle coming towards it, but then assigned a new vehicle
-                            if i_pass.vehicle_id >= 0:
-                                i_pass.state = "reassign"
-                            else:
-                                pass_noPick_Q.append(i_pass)
+                            if i_pass.vehicle_id >= 0:      i_pass.state = "reassign"
+                            else:                           pass_noPick_Q.append(i_pass)
 
-                            People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
-                            Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
                             veh_pick_Q.append(j_vehicle)
 
                         #passenger assigned to non-idle vehicle
                         else:
                             if opt_method == "match_RS" or opt_method == "match_RS_old":
                                 pass_noPick_Q.append(i_pass)
-                                People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
                                 veh_drop_Q.remove(j_vehicle)
                                 j_vehicle.state = "RS_newRequest"
-                                Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
                                 veh_pick_Q.append(j_vehicle)
                             
                             elif opt_method == "match_idleDrop":
                                 pass_noPick_Q.append(i_pass)
-                                People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
                                 j_vehicle.state = "new_assign"
-                                Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
+
 
                             elif opt_method == "match_idlePick":
                                 j_vehicle.state = "reassign"
-                                if i_pass.vehicle_id >= 0:
-                                    i_pass.state = "reassign"
-                                else:
-                                    pass_noPick_Q.append(i_pass)
-                                People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
-                                Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
+                                if i_pass.vehicle_id >= 0:      i_pass.state = "reassign"
+                                else:                           pass_noPick_Q.append(i_pass)
 
                             elif opt_method == "match_idlePickDrop":
-                                if i_pass.vehicle_id >= 0:
-                                    i_pass.state = "reassign"
-                                else:
-                                    pass_noPick_Q.append(i_pass)
-                                People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
+                                if i_pass.vehicle_id >= 0:      i_pass.state = "reassign"
+                                else:                           pass_noPick_Q.append(i_pass)
 
-                                if j_vehicle in veh_pick_Q:
-                                    j_vehicle.state = "reassign"
-                                    Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
-                                elif j_vehicle in veh_drop_Q:
-                                    j_vehicle.state = "new_assign"
-                                    Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
-                                else:
-                                    sys.exit("Error - something wrong with j_vehicle in match_idlePickDrop")
+                                if j_vehicle in veh_pick_Q:     j_vehicle.state = "reassign"
+                                elif j_vehicle in veh_drop_Q:   j_vehicle.state = "new_assign"
+                                else:                           sys.exit("Error - something wrong with j_vehicle in match_idlePickDrop")
+
+                        People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
+                        Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
+
                     else:
                         sys.exit("Error in Assignment!")
 
@@ -358,9 +341,6 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
                                  k_vehicle.pass_pick_count, k_vehicle.pass_drop_count, k_vehicle.pass_dropped_list  ])
 
     vehicle_writer.writerow(["cum_distance", cum_distance/5280.0])
-
-
-
 
 
 
