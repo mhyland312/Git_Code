@@ -5,6 +5,7 @@ import gurobipy
 import Settings as Set
 import Vehicle
 import sys
+import time
 
 
 #############################################################################################################
@@ -21,7 +22,7 @@ def assign_veh(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_
     #elif opt_method == "match_RS":
     #    answer = idleDrop_RS_new(veh_idle_Q, veh_pick_Q, veh_drop_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, t)
     elif opt_method == "match_idleDrop":
-        answer = idleDrop_minDist(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t)
+        answer = idleDrop_minDist(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, t)
     elif opt_method == "match_idlePick":
         answer = idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t)
     elif opt_method == "match_idlePickDrop":
@@ -78,6 +79,7 @@ def FCFS_nearestIdle(veh_idle_Q, pass_noAssign_Q):
 
 #############################################################################################################
 def idleOnly_minDist(veh_idle_Q, pass_noAssign_Q, t):
+
     len_veh = len(veh_idle_Q)
     len_pass = len(pass_noAssign_Q)
     Pass_Veh_assign = [[pass_noAssign_Q[n], Vehicle.Vehicle] for n in range(len_pass)]
@@ -93,24 +95,30 @@ def idleOnly_minDist(veh_idle_Q, pass_noAssign_Q, t):
         trav_wait_penalty = cur_wait * Set.gamma
         for j_veh in veh_idle_Q:
             count_veh += 1
-            distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty
-
-    #Model
+            distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                           + j_veh.curb_time_remain * Set.veh_speed
+    t1 = time.time()
+#Model
     models = gurobipy.Model("idleOnly_minDist")
     models.setParam( 'OutputFlag', False )
 
-    #Decision Variables
+#Decision Variables
     for i in range(len_pass):
         for j in range(len_veh):
-            x[i][j] = models.addVar(vtype=gurobipy.GRB.BINARY, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
     models.update()
 
-    #constraints
+#constraints
+
+    #if the number of unassigned travelers is less than the number of idle vehicles
+        #then make sure all the unassigned travelers are assigned a vehicle
     if (len_pass <= len_veh):
         for ii in range(len_pass):
             models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_veh)) == 1)
         for jj in range(len_veh):
             models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass)) <= 1)
+    #else if the number of unassigned travelers is greater than the number of idle vehicles
+        #then make sure all the idle vehicles are assigned to an unassigned traveler
     else:
         for ii in range(len_pass):
             models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_veh)) <= 1)
@@ -127,13 +135,15 @@ def idleOnly_minDist(veh_idle_Q, pass_noAssign_Q, t):
                     break
     else:
         sys.exit("No Optimal Solution - idleOnly_minDist")
-
+    print("Vehicles= ", len_veh, "  Passengers= ", len_pass, "  time=", time.time() - t1)
     return Pass_Veh_assign
 #############################################################################################################
 
 
 #############################################################################################################
 def idleDrop_RS(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
+
+    #there are some en_route drop-off AVs that already have a next pickup, remove them as possible shared-ride vehicles
     new_veh_drop_queue = []
     for a_veh in veh_drop_Q:
         if a_veh.next_pickup.person_id < 0:
@@ -205,7 +215,7 @@ def idleDrop_RS(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
     #Decision Variables
     for i in range(len_pass):
         for j in range(tot_veh_length):
-            x[i][j] = models.addVar(vtype=gurobipy.GRB.BINARY, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
     models.update()
 
     for iii in range(len_pass):
@@ -253,7 +263,7 @@ def idleDrop_RS(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
 
 
 #############################################################################################################
-def idleDrop_minDist(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
+def idleDrop_minDist(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, pass_noPick_Q, t):
     #remove vehicles from dropoff queue that already have another pickup after their dropoff
     new_veh_drop_queue = []
     for a_veh in veh_drop_Q:
@@ -270,6 +280,7 @@ def idleDrop_minDist(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
     distM = [[0 for j in range(tot_veh_length)] for i in range(len_pass)]
     x = [[0 for j in range(tot_veh_length)] for i in range(len_pass)]
 
+
     count_pass = -1
     for i_pass in pass_noAssign_Q:
         count_pass += 1
@@ -280,10 +291,14 @@ def idleDrop_minDist(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
             count_veh += 1
             #if vehicle state is enroute_dropoff - need to include dropoff distance as well
             if count_veh >= len_veh_idle:
-                distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - trav_wait_penalty + Set.dropoff_penalty
+                distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                               + Set.dropoff_penalty \
+                                               + Set.curb_drop_time*Set.veh_speed
             else:
-                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty
-            
+                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                               + j_veh.curb_time_remain * Set.veh_speed
+
+    t1 = time.time()
     #Model
     models = gurobipy.Model("idleDrop_minDist")
     models.setParam( 'OutputFlag', False )
@@ -291,7 +306,7 @@ def idleDrop_minDist(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
     #Decision Variables
     for i in range(len_pass):
         for j in range(tot_veh_length):
-            x[i][j] = models.addVar(vtype=gurobipy.GRB.BINARY, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
     models.update()
 
     #constraints
@@ -317,7 +332,7 @@ def idleDrop_minDist(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
                     break
     else:
         sys.exit("No Optimal Solution - idleDrop_minDist")
-
+    print("Vehicles= ", tot_veh_length, "  Passengers= ", len_pass, "  time=", time.time() - t1)
     return Pass_Veh_assign
 #############################################################################################################
 
@@ -351,23 +366,24 @@ def idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t):
 
             if count_pass < len_pass_noAssign:
                 if count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                                   + j_veh.curb_time_remain * Set.veh_speed
                 else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty + Set.reassign_penalty #+ j_veh.reassigned*100000
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                                   + Set.reassign_penalty \
 
             else:
-                #if i_pass.reassigned == 1:
-                #    if j_veh.next_pickup.person_id == i_pass.person_id:
-                #        y[count_pass][count_veh] = 1
-
                 prev_assign[count_pass] = 1
                 if j_veh.next_pickup == i_pass:
                     distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty
                 elif count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty + Set.reassign_penalty
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                                   + Set.reassign_penalty \
+                                                   + j_veh.curb_time_remain * Set.veh_speed
                 else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty + 2*Set.reassign_penalty #+ j_veh.reassigned*100000
-
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                                   + 2*Set.reassign_penalty
+    t1 = time.time()
     #Model
     models = gurobipy.Model("idlePick_minDist")
     models.setParam( 'OutputFlag', False )
@@ -375,7 +391,7 @@ def idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t):
     #Decision Variables
     for i in range(len_pass_noPickAssign):
         for j in range(len_veh_idle_n_pick):
-            x[i][j] = models.addVar(vtype=gurobipy.GRB.BINARY, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
     models.update()
 
     #constraints
@@ -406,6 +422,7 @@ def idlePick_minDist(veh_idle_Q, veh_pick_Q, pass_noAssign_Q, pass_noPick_Q, t):
                     break
     else:
         sys.exit("No Optimal Solution - idlePick_minDist")
+    print("Vehicles= ", len_veh_idle_n_pick, "  Passengers= ", len_pass_noPickAssign, "  time=", time.time() - t1)
     return Pass_Veh_assign
 #############################################################################################################
 
@@ -441,22 +458,33 @@ def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pa
 
             if count_pass < len_pass_noAssign:
                 if count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                                   + j_veh.curb_time_remain * Set.veh_speed
                 elif count_veh < len_veh_idle + len_veh_drop:
-                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - trav_wait_penalty + Set.dropoff_penalty
+                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                                   + Set.dropoff_penalty \
+                                                   + Set.curb_drop_time * Set.veh_speed
                 else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty + Set.reassign_penalty  #+ j_veh.reassigned*100000
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                                   + Set.reassign_penalty
 
             else:
                 prev_assign[count_pass] = 1
                 if j_veh.next_pickup == i_pass:
                     distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty
                 elif count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty + Set.reassign_penalty
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                                   + Set.reassign_penalty \
+                                                   + j_veh.curb_time_remain * Set.veh_speed
                 elif count_veh < len_veh_idle + len_veh_drop:
-                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - trav_wait_penalty + Set.dropoff_penalty + Set.reassign_penalty
+                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                                   + Set.dropoff_penalty \
+                                                   + Set.reassign_penalty \
+                                                   + Set.curb_drop_time * Set.veh_speed
                 else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty + 2*Set.reassign_penalty #+ j_veh.reassigned*100000
+                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                                                   + 2*Set.reassign_penalty
+    t1 = time.time()
 
     #Model
     models = gurobipy.Model("idlePickDrop_minDist")
@@ -465,7 +493,7 @@ def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pa
     #Decision Variables
     for i in range(len_pass_noPickAssign):
         for j in range(tot_veh_length):
-            x[i][j] = models.addVar(vtype=gurobipy.GRB.BINARY, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
     models.update()
 
     #constraints
@@ -491,19 +519,23 @@ def idlePickDrop_minDist(veh_idle_Q, veh_pick_Q, veh_drop_Q, pass_noAssign_Q, pa
     if models.status == gurobipy.GRB.Status.OPTIMAL:
         for m_pass in range(len_pass_noPickAssign):
             for n_veh in range(tot_veh_length):
+                if x[m_pass][n_veh].X > 0 and x[m_pass][n_veh].X < 1:
+                    sys.exit("Non Binary Variable- idlePickDrop_minDist")
                 if x[m_pass][n_veh].X == 1:
+                    #print (x[m_pass][n_veh].X )
                     Pass_Veh_assign[m_pass] = [pass_noAssignPick_Q[m_pass], all_veh[n_veh]]
                     break
     else:
         sys.exit("No Optimal Solution - idlePickDrop_minDist")
 
+    print("Vehicles= ", tot_veh_length, "  Passengers= ", len_pass_noPickAssign, "  time=", time.time()-t1)
     return Pass_Veh_assign
 #############################################################################################################
 
 
 
 
-########################### Old RS##########################################################################
+########################### Old RS########################################################################################################
 #############################################################################################################
 def idleDrop_RS_old(veh_idle_Q, veh_drop_Q, pass_noAssign_Q, t):
     len_pass = len(pass_noAssign_Q)
@@ -708,7 +740,7 @@ def idleDrop_RS_new(veh_idle_Q, veh_pick_Q, veh_drop_Q, veh_RS_Q, pass_noAssign_
     # Decision Variables
     for i in range(len_pass_noPickAssign):
         for j in range(tot_veh_length):
-            x[i][j] = models.addVar(vtype=gurobipy.GRB.BINARY, obj=distM[i][j], name='x_%s_%s' % (i, j))
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj=distM[i][j], name='x_%s_%s' % (i, j))
     models.update()
 
 

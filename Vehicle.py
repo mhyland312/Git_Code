@@ -24,6 +24,7 @@ class Vehicle(object):
     next_drop = Person.Person
     state = "string"
     reassigned = 0
+    curb_time_remain = 0
 
     #output information - update throughout simulation
     total_distance = 0.0
@@ -59,6 +60,7 @@ class Vehicle(object):
         self.next_drop = Person.Person
         self.state = state
         self.reassigned = 0
+        self.curb_time_remain = 0
 
         #output information - update throughout simulation
         self.total_distance = 0.0
@@ -123,7 +125,8 @@ def moveVehicle_manhat(t, vehicle, person, opt_method):
         sys.exit("Error in moveVehicle_manhat - wrong vehicle state")
     
     #check for bugs - keep in code
-    if dest_x <= 0.0 or dest_y <= 0.0:
+    if dest_x < 0.0 or dest_y < 0.0:
+        print(dest_x, dest_y)
         sys.exit("Error in moveVehicle_manhat - improper vehicle-person match")
             
     veh_x = vehicle.position_x
@@ -215,6 +218,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.next_pickup = Person.Person
                 vehicle.next_drop = person1
                 vehicle.state = state_enroute_dropoff()
+                vehicle.curb_time_remain = Settings.curb_pick_time
 
                 vehicle.pass_picked_list.append(person1.person_id)
                 vehicle.pickup_times.append(t)
@@ -228,6 +232,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.position_y = person1.dropoff_location_y
                 vehicle.next_drop = Person.Person
                 vehicle.state = state_idle()
+                vehicle.curb_time_remain = Settings.curb_drop_time
 
                 vehicle.pass_dropped_list.append(person1.person_id)
                 vehicle.dropoff_times.append(t)
@@ -339,6 +344,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.next_pickup = Person.Person
                 vehicle.next_drop = person1
                 vehicle.state = state_enroute_dropoff()
+                vehicle.curb_time_remain = Settings.curb_pick_time
 
                 vehicle.pass_picked_list.append(person1.person_id)
                 vehicle.pickup_times.append(t)
@@ -355,6 +361,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                     vehicle.next_pickup = Person.Person
                     vehicle.next_drop = Person.Person
                     vehicle.state = state_idle()
+                    vehicle.curb_time_remain = Settings.curb_drop_time
                 #Case 2: Already have next passenger to pickup
                 else:
                     vehicle.pass_inVeh.remove(person1)
@@ -362,6 +369,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                     vehicle.position_x = person1.dropoff_location_x
                     vehicle.position_y = person1.dropoff_location_y
                     vehicle.next_drop = Person.Person
+                    vehicle.curb_time_remain = Settings.curb_drop_time
                     ####different for idleDrop##########
                     vehicle.next_pickup = vehicle.pass_toPickup[0]
                     vehicle.state = state_enroute_pickup()
@@ -401,6 +409,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.next_pickup = Person.Person
                 vehicle.next_drop = person1
                 vehicle.state = state_enroute_dropoff()
+                vehicle.curb_time_remain = Settings.curb_pick_time
 
                 vehicle.pass_picked_list.append(person1.person_id)
                 vehicle.pickup_times.append(t)
@@ -415,6 +424,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.next_pickup = Person.Person
                 vehicle.next_drop = Person.Person
                 vehicle.state = state_idle()
+                vehicle.curb_time_remain = Settings.curb_drop_time
 
                 vehicle.pass_dropped_list.append(person1.person_id)
                 vehicle.dropoff_times.append(t)
@@ -465,6 +475,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                 vehicle.next_pickup = Person.Person
                 vehicle.next_drop = person1
                 vehicle.state = state_enroute_dropoff()
+                vehicle.curb_time_remain = Settings.curb_pick_time
 
                 vehicle.pass_picked_list.append(person1.person_id)
                 vehicle.pickup_times.append(t)
@@ -481,6 +492,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                     vehicle.next_pickup = Person.Person
                     vehicle.next_drop = Person.Person
                     vehicle.state = state_idle()
+                    vehicle.curb_time_remain = Settings.curb_drop_time
                 #Case 2: Already have next passenger to pickup
                 else:
                     vehicle.pass_inVeh.remove(person1)
@@ -488,6 +500,7 @@ def update_Vehicle(t, person1, vehicle, opt_method):
                     vehicle.position_x = person1.dropoff_location_x
                     vehicle.position_y = person1.dropoff_location_y
                     vehicle.next_drop = Person.Person
+                    vehicle.curb_time_remain = Settings.curb_drop_time
                     ####different for idleDrop##########
                     vehicle.next_pickup = vehicle.pass_toPickup[0]
                     vehicle.state = state_enroute_pickup()

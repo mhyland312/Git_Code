@@ -7,7 +7,7 @@ import Assignment_Algorithm as AA
 import numpy
 import sys
 
-def Main(hold_for, T_max, time_step, opt_method, veh_speed):
+def Main(hold_for, T_max, time_step, opt_method, veh_speed, i_run):
     
         
     ##################################################################################################
@@ -15,7 +15,9 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
     ##################################################################################################
 
     #read in information about all customers
-    demandFile = open('../Inputs/Demand_Requests.csv', 'r')
+    fileStr = "../Inputs/Taxi_Demand_Day" + str(i_run) + "_Sample.csv"
+    demandFile = open(fileStr, 'r')
+    #demandFile = open('../Inputs/Demand_Requests.csv', 'r')
     demand_reader = csv.reader(demandFile)
     People = []
     count = 0
@@ -34,7 +36,8 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
             People.append(Person.make_Person(person_id, pickup_x, pickup_y, request_time, dropoff_x, dropoff_y, group_size, person_state))
 
     #read in information about all vehicles
-    vehFile = open('../Inputs/Vehicles.csv', 'r')
+    #vehFile = open('../Inputs/Vehicles_Taxi.csv', 'r')
+    vehFile = open('../Inputs/Vehicles_Taxi.csv', 'r')
     vehicle_reader = csv.reader(vehFile)
     Vehicles = []
     cnt = 0
@@ -63,65 +66,94 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
     veh_idle_Q = Vehicles[0:fleet_size]
     veh_pick_Q = []
     veh_drop_Q = []
+    veh_drop_hold_Q = []
+    veh_pick_hold_Q = []
+
     remaining_persons = []
     
     #begin simulation
     check = 0
     used_vehicles = []
-    for t in range(0, T_max, time_step ):
+    for t in range(0, T_max, time_step):
         if len(veh_idle_Q) + len(veh_pick_Q) + len(veh_drop_Q) != len(Vehicles):
             sys.exit("something wrong with vehicle queues")
 
+
     # move en_route dropoff vehicles
         for i_veh_drop in veh_drop_Q:
-            person_id_drop = i_veh_drop.next_drop.person_id
-            person_drop = People[person_id_drop]
-    
-            veh_id_drop = i_veh_drop.vehicle_id
-            temp_check_RS = i_veh_drop.next_drop
-            Vehicles[veh_id_drop] = Vehicle.moveVehicle_manhat(t, i_veh_drop, person_drop, opt_method)
+            if i_veh_drop.curb_time_remain > 0:
+                i_veh_drop.curb_time_remain = i_veh_drop.curb_time_remain - 1
 
-            #vehicle just dropped someone off and is now idle
-            if i_veh_drop.state == "idle":
-                veh_idle_Q.append(i_veh_drop)
-                veh_drop_Q.remove(i_veh_drop)
-                People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
+            else:
+                person_id_drop = i_veh_drop.next_drop.person_id
+                person_drop = People[person_id_drop]
 
-            #vehicle just dropped someone off but already has a next pickup point
-            elif i_veh_drop.state == "enroute_pickup":
-                People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
-                veh_pick_Q.append(i_veh_drop)
-                veh_drop_Q.remove(i_veh_drop)
+                veh_id_drop = i_veh_drop.vehicle_id
+                temp_check_RS = i_veh_drop.next_drop
+                Vehicles[veh_id_drop] = Vehicle.moveVehicle_manhat(t, i_veh_drop, person_drop, opt_method)
 
-            #vehicle just dropped someone off but is not empty and now is going to dropoff the next person
-            elif i_veh_drop.state == "enroute_dropoff" and (i_veh_drop.next_drop != temp_check_RS):
-                People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
+                #vehicle just dropped someone off and is now idle
+                if i_veh_drop.state == "idle":
+                    veh_idle_Q.append(i_veh_drop)
+                    veh_drop_Q.remove(i_veh_drop)
+                    People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
+
+                #vehicle just dropped someone off but already has a next pickup point
+                elif i_veh_drop.state == "enroute_pickup":
+                    People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
+                    veh_pick_Q.append(i_veh_drop)
+                    veh_drop_Q.remove(i_veh_drop)
+
+                #vehicle just dropped someone off but is not empty and now is going to dropoff the next person
+                elif i_veh_drop.state == "enroute_dropoff" and (i_veh_drop.next_drop != temp_check_RS):
+                    People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
 
 
     ##################################################################################################
     #move en_route pickup vehicles
         for ii_veh_pick in veh_pick_Q:
-            person_id_pick = ii_veh_pick.next_pickup.person_id
-            person_pick = People[person_id_pick]
-    
-            veh_id_pick = ii_veh_pick.vehicle_id
-            Vehicles[veh_id_pick] = Vehicle.moveVehicle_manhat(t, ii_veh_pick, person_pick, opt_method)
-    
-            if ii_veh_pick.state == "enroute_dropoff":
-                pass_noPick_Q.remove(person_pick)
-                veh_drop_Q.append(ii_veh_pick)
-                veh_pick_Q.remove(ii_veh_pick)
-                People[person_id_pick] = Person.update_Person(t, person_pick, ii_veh_pick)
-    
-    
+            if ii_veh_pick.curb_time_remain > 0:
+                ii_veh_pick.curb_time_remain = ii_veh_pick.curb_time_remain - 1
+            else:
+                person_id_pick = ii_veh_pick.next_pickup.person_id
+                person_pick = People[person_id_pick]
+
+                veh_id_pick = ii_veh_pick.vehicle_id
+                Vehicles[veh_id_pick] = Vehicle.moveVehicle_manhat(t, ii_veh_pick, person_pick, opt_method)
+
+                if ii_veh_pick.state == "enroute_dropoff":
+                    pass_noPick_Q.remove(person_pick)
+                    veh_drop_Q.append(ii_veh_pick)
+                    veh_pick_Q.remove(ii_veh_pick)
+                    People[person_id_pick] = Person.update_Person(t, person_pick, ii_veh_pick)
+
+
     ##################################################################################################
-    #add new demand requests that just arrived to the queue of waiting passengers
+    # update idle vehicles curb wait time
+        for iii_veh_idle in veh_idle_Q:
+            if iii_veh_idle.curb_time_remain > 0:
+                iii_veh_idle.curb_time_remain = iii_veh_idle.curb_time_remain - 1
+
+
+
+    ##################################################################################################
         if i_person < len(People):
-            if People[i_person].request_time <= t:
+            while People[i_person].request_time <= t:
+                # num_served_temp = (list(p.state for p in People)).count("served")
+                # print("i_person", i_person, " num_served:", num_served_temp)
+
                 pass_noAssign_Q.append(People[i_person])
                 i_person += 1
+                if i_person == len(People):
+                    break
 
-    
+                if i_person % 1000 == 0:
+                    num_served_temp = (list(p.state for p in People)).count("served")
+                    #print("i_person", i_person, " num_served:", num_served_temp, " time:", t/3600)
+                    #print("idle", len(veh_idle_Q), " en-route pick:", len(veh_pick_Q), " en-route drop:", len(veh_drop_Q))
+                    #print("time_remain", iii_veh_idle.curb_time_remain)
+
+
     ###################################################################################################
     #Every X seconds assign passengers in the waiting queue to a vehicle
         if t%hold_for == 0:
@@ -147,13 +179,10 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
                 for [i_pass, j_vehicle] in pass_veh_assgn:
 
                     #passenger is not assigned to a real vehicle, and the person is real
-                    if j_vehicle.vehicle_id < 0: # and i_pass.person_id >= 0 :  #Mike - look to remove second condition
+                    if j_vehicle.vehicle_id < 0:
                         remaining_persons.append(i_pass)
                         if i_pass in pass_noPick_Q:
                             sys.exit("Error - traveler was assigned, now is unassigned")
-                            #pass_noPick_Q.remove(i_pass)
-                            #People[i_pass.person_id].state = "unassigned"
-                            #People[i_pass.person_id].vehicle_id = -4
 
                     #passenger re-assigned to vehicle he/she already were assigned to
                     elif j_vehicle.next_pickup == i_pass:
@@ -303,12 +332,18 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
 
 
     #Initialize Vector of Metrics
-    sim_results = [num_metric_People, perc_Rideshare, perc_Reassigned,
-                   mean_ivtt, sd_ivtt, mean_wait_pick, sd_wait_pick, mean_wait_assgn, sd_wait_assgn,
+    # sim_results = [num_metric_People, perc_Rideshare, perc_Reassigned,
+    #                mean_ivtt, sd_ivtt, mean_wait_pick, sd_wait_pick, mean_wait_assgn, sd_wait_assgn,
+    #                mean_trip_dist, sd_trip_dist,
+    #                tot_fleet_miles, mean_tot_veh_dist, sd_tot_veh_dist,
+    #                empty_fleet_miles, perc_empty_miles, fleet_utilization,
+    #                mean_increase_RS_ivtt, sd_increase_RS_ivtt,
+    #                num_served, num_inVeh, num_assgnd, num_unassgnd]
+
+    sim_results = [round(perc_Reassigned,2),
+                   mean_wait_pick, sd_wait_pick, mean_wait_assgn, sd_wait_assgn,
                    mean_trip_dist, sd_trip_dist,
-                   tot_fleet_miles, mean_tot_veh_dist, sd_tot_veh_dist,
-                   empty_fleet_miles, perc_empty_miles, fleet_utilization,
-                   mean_increase_RS_ivtt, sd_increase_RS_ivtt,
+                   perc_empty_miles, fleet_utilization,
                    num_served, num_inVeh, num_assgnd, num_unassgnd]
 
 
@@ -318,29 +353,29 @@ def Main(hold_for, T_max, time_step, opt_method, veh_speed):
     #Traveler and Vehicle Results
     ##################################################################################################
 
-    ####### Traveler Results ###############
-    file_string1 = '../Results/trvlr_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) + '_opt' + str(opt_method)  +'.csv'
-    csv_traveler = open(file_string1, 'w')
-    traveler_writer = csv.writer(csv_traveler, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
-    traveler_writer.writerow(["person_id", "base_ivtt", "simulate_ivtt", "wait_assgn_time","wait_pick_time", "vehicle", "old_veh", "rideshare"])
-
-    for j_person in People[start:end]:
-        base_ivtt = j_person.in_veh_dist/veh_speed
-        traveler_writer.writerow([j_person.person_id, base_ivtt, j_person.travel_time, j_person.wait_assgn_time, j_person.wait_pick_time, j_person.vehicle_id, j_person.old_vehicles, j_person.rideshare])
-
-    ####### Vehicle Results ###############
-    file_string2 = '../Results/veh_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) + '_opt' + str(opt_method)  +'.csv'
-    csv_vehicle = open(file_string2, 'w')
-    vehicle_writer = csv.writer(csv_vehicle, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
-    vehicle_writer.writerow(["vehicle_id", "distance", "pass_assgn", "pass_pick", "pass_drop", "pass_drop_list"])
-
-    cum_distance = 0
-    for k_vehicle in Vehicles:
-        cum_distance += k_vehicle.total_distance
-        vehicle_writer.writerow([k_vehicle.vehicle_id, k_vehicle.total_distance, k_vehicle.pass_assgn_count,
-                                 k_vehicle.pass_pick_count, k_vehicle.pass_drop_count, k_vehicle.pass_dropped_list  ])
-
-    vehicle_writer.writerow(["cum_distance", cum_distance/5280.0])
+    # ####### Traveler Results ###############
+    # file_string1 = '../Results/taxi_trvlr_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) + '_opt' + str(opt_method)  +'.csv'
+    # csv_traveler = open(file_string1, 'w')
+    # traveler_writer = csv.writer(csv_traveler, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+    # traveler_writer.writerow(["person_id", "base_ivtt", "simulate_ivtt", "wait_assgn_time","wait_pick_time", "vehicle", "old_veh", "rideshare"])
+    #
+    # for j_person in People[start:end]:
+    #     base_ivtt = j_person.in_veh_dist/veh_speed
+    #     traveler_writer.writerow([j_person.person_id, base_ivtt, j_person.travel_time, j_person.wait_assgn_time, j_person.wait_pick_time, j_person.vehicle_id, j_person.old_vehicles, j_person.rideshare])
+    #
+    # ####### Vehicle Results ###############
+    # file_string2 = '../Results/taxi_veh_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) + '_opt' + str(opt_method)  +'.csv'
+    # csv_vehicle = open(file_string2, 'w')
+    # vehicle_writer = csv.writer(csv_vehicle, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+    # vehicle_writer.writerow(["vehicle_id", "distance", "pass_assgn", "pass_pick", "pass_drop", "pass_drop_list"])
+    #
+    # cum_distance = 0
+    # for k_vehicle in Vehicles:
+    #     cum_distance += k_vehicle.total_distance
+    #     vehicle_writer.writerow([k_vehicle.vehicle_id, k_vehicle.total_distance, k_vehicle.pass_assgn_count,
+    #                              k_vehicle.pass_pick_count, k_vehicle.pass_drop_count, k_vehicle.pass_dropped_list  ])
+    #
+    # vehicle_writer.writerow(["cum_distance", cum_distance/5280.0])
 
 
 

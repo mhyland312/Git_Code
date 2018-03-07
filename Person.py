@@ -1,6 +1,7 @@
 __author__ = 'Mike'
 
 import sys
+import Settings as Set
 
 class Person(object):
     person_id = -1
@@ -46,7 +47,6 @@ class Person(object):
         self.state = state
         self.reassigned = 0
         self.rideshare = 0
-
 
 
 def make_Person(person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, state):
