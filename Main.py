@@ -255,13 +255,14 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
 
                             # passenger assigned to non-idle vehicle
                             else:
-                                if opt_method == "match_RS" or opt_method == "match_RS_old":
-                                    pass_no_pick__q.append(i_pass)
-                                    veh_drop__q.remove(j_vehicle)
-                                    j_vehicle.state = "RS_newRequest"
-                                    veh_pick__q.append(j_vehicle)
 
-                                elif opt_method == "match_idleDrop":
+                                # if opt_method == "match_RS" or opt_method == "match_RS_old":
+                                #     pass_no_pick__q.append(i_pass)
+                                #     veh_drop__q.remove(j_vehicle)
+                                #     j_vehicle.state = "RS_newRequest"
+                                #     veh_pick__q.append(j_vehicle)
+
+                                if opt_method == "match_idleDrop":
                                     pass_no_pick__q.append(i_pass)
                                     j_vehicle.state = "new_assign"
 
@@ -343,7 +344,7 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
     metric__people = People[start:end]
     num_metric_people = len(metric__people)
 
-    perc__rideshare = round(numpy.mean(list(p.rideshare for p in metric__people if p.state == "served")),2)
+    # perc__rideshare = round(numpy.mean(list(p.rideshare for p in metric__people if p.state == "served")),2)
     perc_reassigned = round(numpy.mean(list(p.reassigned for p in metric__people if p.state == "served")),2)
 
     mean_ivtt = int(numpy.mean(list(p.travel_time for p in metric__people if p.state == "served")))
@@ -358,12 +359,12 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
     mean_trip_dist = round(numpy.mean(list(p.in_veh_dist for p in metric__people if p.state == "served"))/5280, 3)
     sd_trip_dist = round(numpy.std(list(p.in_veh_dist for p in metric__people if p.state == "served"))/5280, 3)
 
-    mean_increase_RS_ivtt = "No_Rideshare"
+    # mean_increase_RS_ivtt = "No_Rideshare"
     sd_increase_RS_ivtt = "No_Rideshare"
-    RS_travel_time_increase_list = list(p.travel_time/(p.in_veh_dist/veh_speed) for p in metric__people if p.state == "served" and p.rideshare == 1)
-    if len(RS_travel_time_increase_list)> 1:
-        mean_increase_RS_ivtt = round(numpy.mean(list(p.travel_time/(p.in_veh_dist/veh_speed) for p in metric__people if p.state == "served" and p.rideshare == 1)), 3)
-        sd_increase_RS_ivtt = round(numpy.std(list(p.travel_time/(p.in_veh_dist/veh_speed) for p in metric__people if p.state == "served" and p.rideshare == 1)), 3)
+    # RS_travel_time_increase_list = list(p.travel_time/(p.in_veh_dist/veh_speed) for p in metric__people if p.state == "served" and p.rideshare == 1)
+    # if len(RS_travel_time_increase_list)> 1:
+    #     mean_increase_RS_ivtt = round(numpy.mean(list(p.travel_time/(p.in_veh_dist/veh_speed) for p in metric__people if p.state == "served" and p.rideshare == 1)), 3)
+    #     sd_increase_RS_ivtt = round(numpy.std(list(p.travel_time/(p.in_veh_dist/veh_speed) for p in metric__people if p.state == "served" and p.rideshare == 1)), 3)
 
 
 
@@ -388,18 +389,12 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
 
 
     #Initialize Vector of Metrics
-    # sim_results = [num_metric_People, perc__rideshare, perc_reassigned,
+    # sim_results = [num_metric_People,  perc_reassigned,
     #                mean_ivtt, sd_ivtt, mean_wait_pick, sd_wait_pick, mean_wait_assgn, sd_wait_assgn,
     #                mean_trip_dist, sd_trip_dist,
     #                tot_fleet_miles, mean_tot_veh_dist, sd_tot_veh_dist,
     #                empty_fleet_miles, perc_empty_miles, fleet_utilization,
     #                mean_increase_RS_ivtt, sd_increase_RS_ivtt,
-    #                num_served, num_inVeh, num_assgnd, num_unassgnd]
-
-    # sim_results = [round(perc_reassigned,2),
-    #                mean_wait_pick, sd_wait_pick, mean_wait_assgn, sd_wait_assgn,
-    #                round(mean_trip_dist, 2), round(sd_trip_dist, 2),
-    #                round(perc_empty_miles, 2) , round(fleet_utilization,2) ,
     #                num_served, num_inVeh, num_assgnd, num_unassgnd]
 
     sim_results = [perc_reassigned, mean_wait_pick, perc_empty_miles , fleet_utilization,
@@ -414,11 +409,11 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
     # file_string1 = '../Results_Rev2/taxi_trvlr_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) + '_opt' + str(opt_method)  +'.csv'
     # csv_traveler = open(file_string1, 'w')
     # traveler_writer = csv.writer(csv_traveler, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
-    # traveler_writer.writerow(["person_id", "base_ivtt", "simulate_ivtt", "wait_assgn_time","wait_pick_time", "vehicle", "old_veh", "rideshare"])
+    # traveler_writer.writerow(["person_id", "base_ivtt", "simulate_ivtt", "wait_assgn_time","wait_pick_time", "vehicle", "old_veh"]) #, "rideshare"])
     #
     # for j_person in People[start:end]:
     #     base_ivtt = j_person.in_veh_dist/veh_speed
-    #     traveler_writer.writerow([j_person.person_id, base_ivtt, j_person.travel_time, j_person.wait_assgn_time, j_person.wait_pick_time, j_person.vehicle_id, j_person.old_vehicles, j_person.rideshare])
+    #     traveler_writer.writerow([j_person.person_id, base_ivtt, j_person.travel_time, j_person.wait_assgn_time, j_person.wait_pick_time, j_person.vehicle_id, j_person.old_vehicles]) #, j_person.rideshare])
     #
     # ####### Vehicle Results ###############
     # file_string2 = '../Results_Rev2/taxi_veh_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) + '_opt' + str(opt_method)  +'.csv'

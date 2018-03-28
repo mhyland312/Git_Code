@@ -16,21 +16,20 @@ delta_veh_dist = veh_speed * time_step #feet
 
 inf = 10000000000000
 
-
-pen_RS = 30.0 #30seconds * veh_speed
-shared_ride_penalty = pen_RS * veh_speed
-
-#wait_time_multi =  50.0
-
-#demand_Dist = "O_Uniform_D_Uniform" #"O_Uniform_D_Transit" "O_Uniform_D_Cluster"
-###Rideshare Constraint Settings
-#vehicle cannot increase remaining travel distance by X%
-max_deviate = 1.6
-#must have an X% decrease with RS
-min_improve_perc = 0.8
-#must reduce wait time by Xmin
-min_improve_min = 1.5
-min_improve_ft = min_improve_min * 60 * veh_speed
+# pen_RS = 30.0 #30seconds * veh_speed
+# #shared_ride_penalty = pen_RS * veh_speed
+#
+# #wait_time_multi =  50.0
+#
+# #demand_Dist = "O_Uniform_D_Uniform" #"O_Uniform_D_Transit" "O_Uniform_D_Cluster"
+# ###Rideshare Constraint Settings
+# #vehicle cannot increase remaining travel distance by X%
+# max_deviate = 1.6
+# #must have an X% decrease with RS
+# min_improve_perc = 0.8
+# #must reduce wait time by Xmin
+# min_improve_min = 1.5
+# min_improve_ft = min_improve_min * 60 * veh_speed
 
 
 pen_reassign = 7.0#seconds

@@ -242,92 +242,92 @@ def update_Vehicle(t, person1, vehicle, opt_method):
 
 
     #Opt method 2
-        elif opt_method == "match_RS" or opt_method == "match_RS_old" :
-            #just picked up passenger - now need to drop him/her off, but 2 cases
-            if vehicle.state == "enroute_pickup":
-                #Case 1 - before pickup - no one else in vehicle
-                if len(vehicle.pass_inVeh) == 0:
-                    vehicle.pass_inVeh.append(person1)
-                    vehicle.pass_toPickup.remove(person1)
-                    vehicle.current_load += person1.group_size
-                    vehicle.position_x = person1.pickup_location_x
-                    vehicle.position_y = person1.pickup_location_y
-                    vehicle.current_dest_x = person1.dropoff_location_x
-                    vehicle.current_dest_y = person1.dropoff_location_y
-                    vehicle.next_pickup = Person.Person
-                    vehicle.next_drop = person1
-                    vehicle.state = state_enroute_dropoff()
-
-                #Case 2 - before pickup - other passenger(s) in vehicle
-                else:
-                    vehicle.pass_inVeh.append(person1)
-                    vehicle.pass_toPickup.remove(person1)
-                    vehicle.current_load += person1.group_size
-                    if vehicle.current_load > vehicle.capacity:
-                        print("Error in update Vehicle - vehicle.current_load > vehicle.capacity")
-                    vehicle.position_x = person1.pickup_location_x
-                    vehicle.position_y = person1.pickup_location_y
-                    ######different for Rideshare#############################
-                    next_drop_pass = get_next_drop(vehicle)
-                    vehicle.next_drop = next_drop_pass
-                    vehicle.current_dest_x = next_drop_pass.dropoff_location_x
-                    vehicle.current_dest_y = next_drop_pass.dropoff_location_y
-                    ##########################################################
-                    vehicle.next_pickup = Person.Person
-                    vehicle.state = state_enroute_dropoff()
-
-                vehicle.pass_picked_list.append(person1.person_id)
-                vehicle.pickup_times.append(t)
-                vehicle.pass_pick_count += 1
-
-            #just dropped off passenger - 2 Cases
-            elif vehicle.state == "enroute_dropoff":
-                #Case 1: Only one person in vehicle before dropoff
-                if len(vehicle.pass_inVeh) == 1:
-                    vehicle.pass_inVeh.remove(person1)
-                    vehicle.current_load -= person1.group_size
-                    vehicle.position_x = person1.dropoff_location_x
-                    vehicle.position_y = person1.dropoff_location_y
-                    vehicle.next_pickup = Person.Person
-                    vehicle.next_drop = Person.Person
-                    vehicle.state = state_idle()
-
-                #Case 2: More than one person in vehicle before dropoff
-                elif len(vehicle.pass_inVeh) > 1:
-                    vehicle.pass_inVeh.remove(person1)
-                    vehicle.current_load -= person1.group_size
-                    vehicle.position_x = person1.dropoff_location_x
-                    vehicle.position_y = person1.dropoff_location_y
-                    vehicle.next_pickup = Person.Person
-                    ######different for Rideshare#############################
-                    next_drop_pass = get_next_drop(vehicle)
-                    vehicle.next_drop = next_drop_pass
-                    vehicle.current_dest_x = next_drop_pass.dropoff_location_x
-                    vehicle.current_dest_y = next_drop_pass.dropoff_location_y
-                    vehicle.state = state_enroute_dropoff()
-                    ##########################################################
-                else:
-                    print("Error in update vehicle - rideshare vehicle empty")
-
-                vehicle.pass_dropped_list.append(person1.person_id)
-                vehicle.dropoff_times.append(t)
-                vehicle.pass_drop_count += 1
-
-            #unique RS state - just got assigned to new request even though passenger in car
-            elif vehicle.state == "RS_newRequest":
-                vehicle.pass_toPickup.append(person1)
-                vehicle.current_dest_x = person1.pickup_location_x
-                vehicle.current_dest_y = person1.pickup_location_y
-                vehicle.next_pickup = person1
-                vehicle.next_drop = Person.Person
-                vehicle.state = state_enroute_pickup()
-
-                vehicle.pass_assgn_list.append(person1.person_id)
-                vehicle.assigned_times.append(t)
-                vehicle.pass_assgn_count += 1
-            else:
-                print("Error in update Vehicle - No Proper State for RS")
-
+        # elif opt_method == "match_RS" or opt_method == "match_RS_old" :
+        #     #just picked up passenger - now need to drop him/her off, but 2 cases
+        #     if vehicle.state == "enroute_pickup":
+        #         #Case 1 - before pickup - no one else in vehicle
+        #         if len(vehicle.pass_inVeh) == 0:
+        #             vehicle.pass_inVeh.append(person1)
+        #             vehicle.pass_toPickup.remove(person1)
+        #             vehicle.current_load += person1.group_size
+        #             vehicle.position_x = person1.pickup_location_x
+        #             vehicle.position_y = person1.pickup_location_y
+        #             vehicle.current_dest_x = person1.dropoff_location_x
+        #             vehicle.current_dest_y = person1.dropoff_location_y
+        #             vehicle.next_pickup = Person.Person
+        #             vehicle.next_drop = person1
+        #             vehicle.state = state_enroute_dropoff()
+        #
+        #         #Case 2 - before pickup - other passenger(s) in vehicle
+        #         else:
+        #             vehicle.pass_inVeh.append(person1)
+        #             vehicle.pass_toPickup.remove(person1)
+        #             vehicle.current_load += person1.group_size
+        #             if vehicle.current_load > vehicle.capacity:
+        #                 print("Error in update Vehicle - vehicle.current_load > vehicle.capacity")
+        #             vehicle.position_x = person1.pickup_location_x
+        #             vehicle.position_y = person1.pickup_location_y
+        #             ######different for Rideshare#############################
+        #             next_drop_pass = get_next_drop(vehicle)
+        #             vehicle.next_drop = next_drop_pass
+        #             vehicle.current_dest_x = next_drop_pass.dropoff_location_x
+        #             vehicle.current_dest_y = next_drop_pass.dropoff_location_y
+        #             ##########################################################
+        #             vehicle.next_pickup = Person.Person
+        #             vehicle.state = state_enroute_dropoff()
+        #
+        #         vehicle.pass_picked_list.append(person1.person_id)
+        #         vehicle.pickup_times.append(t)
+        #         vehicle.pass_pick_count += 1
+        #
+        #     #just dropped off passenger - 2 Cases
+        #     elif vehicle.state == "enroute_dropoff":
+        #         #Case 1: Only one person in vehicle before dropoff
+        #         if len(vehicle.pass_inVeh) == 1:
+        #             vehicle.pass_inVeh.remove(person1)
+        #             vehicle.current_load -= person1.group_size
+        #             vehicle.position_x = person1.dropoff_location_x
+        #             vehicle.position_y = person1.dropoff_location_y
+        #             vehicle.next_pickup = Person.Person
+        #             vehicle.next_drop = Person.Person
+        #             vehicle.state = state_idle()
+        #
+        #         #Case 2: More than one person in vehicle before dropoff
+        #         elif len(vehicle.pass_inVeh) > 1:
+        #             vehicle.pass_inVeh.remove(person1)
+        #             vehicle.current_load -= person1.group_size
+        #             vehicle.position_x = person1.dropoff_location_x
+        #             vehicle.position_y = person1.dropoff_location_y
+        #             vehicle.next_pickup = Person.Person
+        #             ######different for Rideshare#############################
+        #             next_drop_pass = get_next_drop(vehicle)
+        #             vehicle.next_drop = next_drop_pass
+        #             vehicle.current_dest_x = next_drop_pass.dropoff_location_x
+        #             vehicle.current_dest_y = next_drop_pass.dropoff_location_y
+        #             vehicle.state = state_enroute_dropoff()
+        #             ##########################################################
+        #         else:
+        #             print("Error in update vehicle - rideshare vehicle empty")
+        #
+        #         vehicle.pass_dropped_list.append(person1.person_id)
+        #         vehicle.dropoff_times.append(t)
+        #         vehicle.pass_drop_count += 1
+        #
+        #     #unique RS state - just got assigned to new request even though passenger in car
+        #     elif vehicle.state == "RS_newRequest":
+        #         vehicle.pass_toPickup.append(person1)
+        #         vehicle.current_dest_x = person1.pickup_location_x
+        #         vehicle.current_dest_y = person1.pickup_location_y
+        #         vehicle.next_pickup = person1
+        #         vehicle.next_drop = Person.Person
+        #         vehicle.state = state_enroute_pickup()
+        #
+        #         vehicle.pass_assgn_list.append(person1.person_id)
+        #         vehicle.assigned_times.append(t)
+        #         vehicle.pass_assgn_count += 1
+        #     else:
+        #         print("Error in update Vehicle - No Proper State for RS")
+        #
 
     #Opt method 3
         elif opt_method == "match_idleDrop":

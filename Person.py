@@ -23,7 +23,7 @@ class Person(object):
     old_vehicles = []
     state = "string"
     reassigned = 0
-    rideshare = 0
+    #rideshare = 0
 
     # The class "constructor" - It's actually an initializer
     def __init__(self, person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, state):
@@ -46,7 +46,7 @@ class Person(object):
         self.old_vehicles = []
         self.state = state
         self.reassigned = 0
-        self.rideshare = 0
+        #self.rideshare = 0
 
 
 def make_Person(person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, state):
@@ -123,7 +123,6 @@ def update_Person_Assgnmnt(t, person_2, vehicle_2):
         same_vehicle = 1
 
     else:
-
         person_2.assign_time.append(t)
         person_2.wait_assgn_time.append(t - person_2.request_time)
         person_2.vehicle_id = vehicle_2.vehicle_id
