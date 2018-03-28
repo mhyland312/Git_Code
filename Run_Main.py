@@ -1,14 +1,17 @@
-__author__ = 'Mike'
-
 import Settings as Set
 import Initialize as Init
 import Main
 import csv
 import time
+__author__ = 'Mike'
 
 t0 = time.time()
 
-area_size_miles = [20.0]
+#######################################################################################################################
+# Inputs for Simulation Runs
+#######################################################################################################################
+
+area_size_miles = [8.0]
 area_size = [x * 5280.0 for x in area_size_miles]
 
 # requests_per_hour = [900, 1000, 1100, 1200, 1300]
@@ -20,29 +23,33 @@ fleet_size1 = [j for j in range(150, 171, 10)]
 fleet_size2 = [j for j in range(175, 251, 25)]
 fleet_size = fleet_size1 + fleet_size2
 
-hold_for = [15]
+hold_for = [10]
 
-opt_methods = [ "FCFS_longestIdle", "FCFS_nearestIdle",
-                "match_idleOnly", "match_idlePick", "match_idleDrop", "match_idlePickDrop"]
-#opt_methods = [ "match_idleOnly", "match_idleDrop", "match_idlePickDrop"]
+opt_methods = ["FCFS_longestIdle", "FCFS_nearestIdle", "FCFS_smartNN",
+               "match_idleOnly", "match_idlePick", "match_idleDrop", "match_idlePickDrop"]
 
+
+#######################################################################################################################
+# Create Files to Write Results
+#######################################################################################################################
 
 csv_results2 = open(
-    '../Results/BigResults_20miles' + '_holds' + str(len(hold_for)) + '_fleet' + str(len(fleet_size)) + '_opt' + str(
-        len(opt_methods)) + '.csv', 'w')
+    '../Results_Rev2/BigResults_20miles' + '_holds' + str(len(hold_for)) + '_fleet'
+    + str(len(fleet_size)) + '_opt' + str(len(opt_methods)) + '.csv', 'w')
 results_writer2 = csv.writer(csv_results2, lineterminator='\n', delimiter=',', quotechar='"',
                              quoting=csv.QUOTE_NONNUMERIC)
 results_writer2.writerow(
     ["Run#", "Simulation Length", "Requests Per Hour", "Demand Type",
-     "Area Size", "Opt Method", "Hold Time", "Fleet Size"
-     "% Reassign",
-     "mean wait pick", "sd wait pick", "mean wait assign", "sd wait assign",
-        "mean trip dist", "sd trip dist",
-     "% empty_miles", "fleet_utilization",
-     "served", "in vehicle", "assigned", "unassigned"])
+     "Area Size", "Opt Method", "Hold Time", "Fleet Size",
+     "% Reassign",  "Mean Wait Pick", "% Empty", "Fleet Util",
+     "#Served", "#inVeh", "#Assgnd", "#Unassgnd"])
 
 
-for i_run in range(0, 20):
+#######################################################################################################################
+# Loop Through Simulations
+#######################################################################################################################
+
+for i_run in range(0, 2):
     for a_demand_rate in requests_per_hour:
         for p_demand_type in demand_Type:
             for q_area_size in area_size:
@@ -58,7 +65,9 @@ for i_run in range(0, 20):
                                   " area size:", q_area_size / 5280)
                             print("fleet size:", jj_fleet_size, " hold for:", k_hold_for, " Opt Method:", m_opt_method)
                             # run simulation
-                            results = Main.Main(k_hold_for, Set.T_max, Set.time_step, m_opt_method, Set.veh_speed)
+                            #print("% Reassigned ", "Mean Wait", "% Empty", "Fleet Util",
+                            #      "#Served", "#inVeh", "#Assgned", "#Unassign")
+                            results = Main.main(k_hold_for, Set.T_max, Set.time_step, m_opt_method, Set.veh_speed, 0, False)
                             print(results)
                             results_writer2.writerow(
                                 [i_run, Set.T_max, a_demand_rate, p_demand_type, q_area_size / 5280, m_opt_method,

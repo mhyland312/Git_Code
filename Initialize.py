@@ -89,9 +89,10 @@ def generate_Demand(T_max, requests_per_hour, max_distance, max_groupSize, deman
         row = [a, b, c, d, e, f, g]
         writer.writerow(row)
     csvDemandFile.close()
+    return
 
 
-def generate_Fleet( max_distance, num_vehicles, veh_capacity):
+def generate_Fleet(max_distance, num_vehicles, veh_capacity):
     csvVehicleFile = open('../Inputs/Vehicles_Taxi.csv', 'w')
     writer = csv.writer(csvVehicleFile, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
     writer.writerow(["vehicle_id", "start_x", "start_y", "capacity"])
@@ -107,12 +108,11 @@ def generate_Fleet( max_distance, num_vehicles, veh_capacity):
         depot_num = random.randint(0,3)
         #x = cluster_x[depot_num]
         #y = cluster_y[depot_num]
-        x = max_distance/2.0 + random.random()*5280 #max_distance*random.random()
-        y = max_distance/2.0 + random.random()*5280#max_distance*random.random()
+        x = max_distance/2.0 #+ random.random()*5280 #max_distance*random.random()
+        y = max_distance/2.0 #+ random.random()*5280#max_distance*random.random()
         cap = veh_capacity
         rw = [id, x, y, cap]
         writer.writerow(rw)
     csvVehicleFile.close()
 
-
-    return()
+    return

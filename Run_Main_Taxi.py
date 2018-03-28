@@ -15,7 +15,7 @@ area_size = [x * 5280.0 for x in area_size_miles]
 
 fleet_size = [350]
 hold_for = [30]
-opt_methods = [  "match_idleDrop", "match_idlePickDrop"] #"match_idleOnly",  "match_idlePick",
+opt_methods = ["match_idleDrop", "match_idlePickDrop"] #"match_idleOnly",  "match_idlePick",
 
 #csv_results2 = open(
 #    '../Results/Taxi_Day7Sample_SmallFleet' + '_holds' + str(len(hold_for)) + '_fleet' + str(len(fleet_size)) + '_opt' + str(
