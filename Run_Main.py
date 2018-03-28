@@ -21,7 +21,7 @@ demand_Type = ["O_Uniform_D_Uniform"]
 
 fleet_size1 = [j for j in range(150, 171, 10)]
 fleet_size2 = [j for j in range(175, 251, 25)]
-fleet_size = fleet_size1 + fleet_size2
+fleet_size = [190] #fleet_size1 + fleet_size2
 
 hold_for = [10]
 
@@ -44,7 +44,6 @@ results_writer2.writerow(
      "% Reassign",  "Mean Wait Pick", "% Empty", "Fleet Util",
      "#Served", "#inVeh", "#Assgnd", "#Unassgnd"])
 
-
 #######################################################################################################################
 # Loop Through Simulations
 #######################################################################################################################
@@ -64,9 +63,6 @@ for i_run in range(0, 2):
                             print("run #:", i_run, " demand rate:", a_demand_rate, " demand type:", p_demand_type,
                                   " area size:", q_area_size / 5280)
                             print("fleet size:", jj_fleet_size, " hold for:", k_hold_for, " Opt Method:", m_opt_method)
-                            # run simulation
-                            #print("% Reassigned ", "Mean Wait", "% Empty", "Fleet Util",
-                            #      "#Served", "#inVeh", "#Assgned", "#Unassign")
                             results = Main.main(k_hold_for, Set.T_max, Set.time_step, m_opt_method, Set.veh_speed, 0, False)
                             print(results)
                             results_writer2.writerow(

@@ -92,7 +92,6 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                 person_drop = People[person_id_drop]
 
                 veh_id_drop = i_veh_drop.vehicle_id
-                temp_check_rs = i_veh_drop.next_drop
                 Vehicles[veh_id_drop] = Vehicle.moveVehicle_manhat(t, i_veh_drop, person_drop, opt_method)
 
                 # vehicle just dropped someone off and is now idle
@@ -106,10 +105,6 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                     People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
                     veh_pick__q.append(i_veh_drop)
                     veh_drop__q.remove(i_veh_drop)
-
-                # vehicle just dropped someone off but is not empty and now is going to dropoff the next person
-                elif i_veh_drop.state == "enroute_dropoff" and (i_veh_drop.next_drop != temp_check_rs):
-                    People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
 
     ##################################################################################################
     # move en_route pickup vehicles
@@ -139,21 +134,10 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
     # check if there are new requests
         if i_person < len(People):
             while People[i_person].request_time <= t:
-                # num_served_temp = (list(p.state for p in People)).count("served")
-                # print("i_person", i_person, " num_served:", num_served_temp)
-
                 pass_no_assign__q.append(People[i_person])
                 i_person += 1
                 if i_person == len(People):
                     break
-
-                # if i_person % 1000 == 0:
-                    # num_served_temp = (list(p.state for p in People)).count("served")
-                    # print("i_person", i_person, " num_served:", num_served_temp, " time:", t/3600)
-                    # print("idle", len(veh_idle__q),
-                    #     " en-route pick:", len(veh_pick__q),
-                    #      " en-route drop:", len(veh_drop__q))
-                    # print("time_remain", iii_veh_idle.curb_time_remain)
 
     ###################################################################################################
     # Assign AVs to traveler requests
@@ -256,12 +240,6 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                             # passenger assigned to non-idle vehicle
                             else:
 
-                                # if opt_method == "match_RS" or opt_method == "match_RS_old":
-                                #     pass_no_pick__q.append(i_pass)
-                                #     veh_drop__q.remove(j_vehicle)
-                                #     j_vehicle.state = "RS_newRequest"
-                                #     veh_pick__q.append(j_vehicle)
-
                                 if opt_method == "match_idleDrop":
                                     pass_no_pick__q.append(i_pass)
                                     j_vehicle.state = "new_assign"
@@ -359,16 +337,7 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
     mean_trip_dist = round(numpy.mean(list(p.in_veh_dist for p in metric__people if p.state == "served"))/5280, 3)
     sd_trip_dist = round(numpy.std(list(p.in_veh_dist for p in metric__people if p.state == "served"))/5280, 3)
 
-    # mean_increase_RS_ivtt = "No_Rideshare"
-    sd_increase_RS_ivtt = "No_Rideshare"
-    # RS_travel_time_increase_list = list(p.travel_time/(p.in_veh_dist/veh_speed) for p in metric__people if p.state == "served" and p.rideshare == 1)
-    # if len(RS_travel_time_increase_list)> 1:
-    #     mean_increase_RS_ivtt = round(numpy.mean(list(p.travel_time/(p.in_veh_dist/veh_speed) for p in metric__people if p.state == "served" and p.rideshare == 1)), 3)
-    #     sd_increase_RS_ivtt = round(numpy.std(list(p.travel_time/(p.in_veh_dist/veh_speed) for p in metric__people if p.state == "served" and p.rideshare == 1)), 3)
-
-
-
-    ####### Vehicle Metrics ###############
+    # Vehicle Metrics ###############
 
     tot_fleet_miles = int(sum(list(v.total_distance for v in Vehicles))/5280.0)
     mean_tot_veh_dist= round(numpy.mean(list(v.total_distance for v in Vehicles))/5280.0,2)

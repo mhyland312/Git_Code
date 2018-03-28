@@ -10,7 +10,6 @@ def generate_Demand(T_max, requests_per_hour, max_distance, max_groupSize, deman
     simul_len = (T_max/3600.0)
     num_requests = int(simul_len * requests_per_hour)
 
-
     lambd = 0.8 * T_max/float(num_requests)
 
     demand_time = numpy.random.exponential(lambd, num_requests)

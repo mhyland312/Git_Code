@@ -23,7 +23,6 @@ class Person(object):
     old_vehicles = []
     state = "string"
     reassigned = 0
-    #rideshare = 0
 
     # The class "constructor" - It's actually an initializer
     def __init__(self, person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, state):
@@ -46,7 +45,6 @@ class Person(object):
         self.old_vehicles = []
         self.state = state
         self.reassigned = 0
-        #self.rideshare = 0
 
 
 def make_Person(person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, state):
@@ -61,21 +59,17 @@ def calculate_wait_pick_time(request_time, pickup_time):
     wait_pick_time = pickup_time - request_time
     return wait_pick_time
 
-
 def calculate_travel_time(pickup_time, dropoff_time):
     travel_time = dropoff_time - pickup_time
     return travel_time
-
 
 def state_assigned():
     state = "assigned"
     return state
 
-
 def state_inVeh():
     state = "inVeh"
     return state
-
 
 def state_served():
     state = "served"
@@ -109,27 +103,3 @@ def update_Person(t, person_1, vehicle1):
         person_1.travel_time = calculate_travel_time(person_1.pickup_time, person_1.dropoff_time)
 
     return person_1
-
-
-def update_Person_Assgnmnt(t, person_2, vehicle_2):
-
-    #if traveler is not assigned to an AV
-    if vehicle_2.vehicle_id < 0:
-        if person_2.state == "assigned":
-            sys.exit("Error - Traveler went from assigned to unassigned! ")
-
-    #assigned to same vehicle
-    elif vehicle_2.vehicle_id == person_2.vehicle_id:
-        same_vehicle = 1
-
-    else:
-        person_2.assign_time.append(t)
-        person_2.wait_assgn_time.append(t - person_2.request_time)
-        person_2.vehicle_id = vehicle_2.vehicle_id
-        person_2.old_vehicles.append(vehicle_2.vehicle_id)
-        person_2.state = state_assigned()
-        if len(person_2.old_vehicles) > 0:
-            person_2.reassigned = 1
-        #rideshare = 0
-
-    return person_2
