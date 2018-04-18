@@ -11,7 +11,7 @@ t0 = time.time()
 # Inputs for Simulation Runs
 #######################################################################################################################
 
-area_size_miles = [8.0]
+area_size_miles = [12.0]
 area_size = [x * 5280.0 for x in area_size_miles]
 
 # requests_per_hour = [900, 1000, 1100, 1200, 1300]
@@ -21,13 +21,13 @@ demand_Type = ["O_Uniform_D_Uniform"]
 
 fleet_size1 = [j for j in range(150, 171, 10)]
 fleet_size2 = [j for j in range(175, 251, 25)]
-fleet_size = [190] #fleet_size1 + fleet_size2
+fleet_size = [130] #fleet_size1 + fleet_size2
 
 hold_for = [10]
 
-opt_methods = ["FCFS_longestIdle", "FCFS_nearestIdle", "FCFS_smartNN",
-               "match_idleOnly", "match_idlePick", "match_idleDrop", "match_idlePickDrop"]
-
+opt_methods = [ "FCFS_smartNN", "FCFS_drop_smartNN", "FCFS_drop_smartNN2",
+               "match_idleOnly",  "match_idleDrop"]
+            #"FCFS_longestIdle", "FCFS_nearestIdle","match_idlePick", , "match_idlePickDrop"
 
 #######################################################################################################################
 # Create Files to Write Results
@@ -48,7 +48,7 @@ results_writer2.writerow(
 # Loop Through Simulations
 #######################################################################################################################
 
-for i_run in range(0, 2):
+for i_run in range(0, 1):
     for a_demand_rate in requests_per_hour:
         for p_demand_type in demand_Type:
             for q_area_size in area_size:

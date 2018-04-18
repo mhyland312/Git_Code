@@ -139,13 +139,13 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                 if i_person == len(People):
                     break
 
-    ###################################################################################################
+     ###################################################################################################
     # Assign AVs to traveler requests
 
     ###################################################################################################
     # Assign using FCFS methods
         if "FCFS" in opt_method:
-            if len(pass_no_assign__q) > 0 and len(veh_idle__q) > 0:
+            if len(pass_no_assign__q) > 0 and len(veh_idle__q + veh_drop__q) > 0:
 
                 pass_veh_assgn = AA.assign_veh_fcfs(veh_idle__q, veh_drop__q, pass_no_assign__q, opt_method)
 
@@ -168,8 +168,9 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                             pass_no_pick__q.append(i_pass)
 
                         # passenger assigned to non-idle vehicle
-                        # else:
-                        #   miker = 2 #don't have this capability for FCFS yet
+                        else:
+                            pass_no_pick__q.append(i_pass)
+                            j_vehicle.state = "new_assign"
 
                         People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
                         Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
@@ -239,7 +240,6 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
 
                             # passenger assigned to non-idle vehicle
                             else:
-
                                 if opt_method == "match_idleDrop":
                                     pass_no_pick__q.append(i_pass)
                                     j_vehicle.state = "new_assign"

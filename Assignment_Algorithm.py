@@ -16,6 +16,10 @@ def assign_veh_fcfs(veh_idle_q, veh_drop_q, pass_no_assign_q, opt_method):
         answer = fcfs_nearest_idle(veh_idle_q, pass_no_assign_q)
     elif opt_method == "FCFS_smartNN":
         answer = FCFS_smartNN(veh_idle_q, pass_no_assign_q)
+    elif opt_method == "FCFS_drop_smartNN":
+        answer = FCFS_drop_smartNN(veh_idle_q, veh_drop_q, pass_no_assign_q)
+    elif opt_method == "FCFS_drop_smartNN2":
+        answer = FCFS_drop_smartNN(veh_idle_q, veh_drop_q, pass_no_assign_q)
     else:
         print("Error: No_FCFS_assignment_method")
     return answer
@@ -89,7 +93,6 @@ def FCFS_smartNN(veh_idle_q, pass_no_assign_q):
     pass_veh_assign = [[pass_no_assign_q[n], Vehicle.Vehicle] for n in range(len_pass)]
 
     temp_pass_no_assign_q = pass_no_assign_q[0:len(pass_no_assign_q)]
-    temp_veh_idle_q = veh_idle_q[0:len(veh_idle_q)]
 
     if len_veh >= len_pass:
         used_vehicles = []
@@ -121,6 +124,142 @@ def FCFS_smartNN(veh_idle_q, pass_no_assign_q):
             for i_person in temp_pass_no_assign_q:
                 pass_index += 1
                 dist = Distance.dist_manhat(i_person, j_veh)
+                if dist < min_dist:
+                    win_pass_index = pass_index
+                    min_dist = dist
+            if win_pass_index >= 0:
+                win_pass = temp_pass_no_assign_q[win_pass_index]
+                temp_pass_no_assign_q.remove(win_pass)
+
+                temp_index = pass_no_assign_q.index(win_pass)
+                pass_veh_assign[temp_index] = [win_pass, j_veh]
+
+    return pass_veh_assign
+#############################################################################################################
+
+
+
+############################################################################################################
+def FCFS_drop_smartNN(veh_idle_q, veh_drop_q, pass_no_assign_q):
+    # remove vehicles from dropoff queue that already have another pickup after their dropoff
+    new_veh_drop_queue = []
+    for a_veh in veh_drop_q:
+        if a_veh.next_pickup.person_id < 0:
+            new_veh_drop_queue.append(a_veh)
+
+    len_veh_idle = len(veh_idle_q)
+    veh_idle_n_drop_Q = veh_idle_q + new_veh_drop_queue
+    tot_veh_length = len(veh_idle_n_drop_Q)
+
+    len_pass = len(pass_no_assign_q)
+    pass_veh_assign = [[pass_no_assign_q[n], Vehicle.Vehicle] for n in range(len_pass)]
+
+    temp_pass_no_assign_q = pass_no_assign_q[0:len(pass_no_assign_q)]
+
+    if tot_veh_length >= len_pass:  #Flo wants to possible consider this
+        used_vehicles = []
+        count_p = -1
+        for i_person in pass_no_assign_q:
+            count_p += 1
+            min_dist = Set.inf
+            win_veh_index = -1
+            veh_index = -1
+            for j_veh in veh_idle_n_drop_Q:
+                veh_index += 1
+                if veh_index >= len_veh_idle:
+                    dist = Distance.dyn_dist_manhat(i_person, j_veh)
+                else:
+                    dist = Distance.dist_manhat(i_person, j_veh)
+                # make sure that two persons aren't assigned to same vehicle
+                if dist < min_dist and not (j_veh.vehicle_id in used_vehicles):
+                    win_veh_index = veh_index
+                    min_dist = dist
+            if win_veh_index >= 0:
+                win_vehicle = veh_idle_n_drop_Q[win_veh_index]
+                used_vehicles.append(win_vehicle.vehicle_id)
+            else:
+                win_vehicle = Vehicle.Vehicle
+            pass_veh_assign[count_p] = [i_person, win_vehicle]
+
+    else:
+        for j_veh in veh_idle_n_drop_Q:
+            min_dist = Set.inf
+            win_pass_index = -1
+            pass_index = -1
+            for i_person in temp_pass_no_assign_q:
+                pass_index += 1
+                if j_veh.next_drop.person_id >= 0:
+                    dist = Distance.dyn_dist_manhat(i_person, j_veh)
+                else:
+                    dist = Distance.dist_manhat(i_person, j_veh)
+                if dist < min_dist:
+                    win_pass_index = pass_index
+                    min_dist = dist
+            if win_pass_index >= 0:
+                win_pass = temp_pass_no_assign_q[win_pass_index]
+                temp_pass_no_assign_q.remove(win_pass)
+
+                temp_index = pass_no_assign_q.index(win_pass)
+                pass_veh_assign[temp_index] = [win_pass, j_veh]
+
+    return pass_veh_assign
+#############################################################################################################
+
+
+
+############################################################################################################
+def FCFS_drop_smartNN2(veh_idle_q, veh_drop_q, pass_no_assign_q):
+    # remove vehicles from dropoff queue that already have another pickup after their dropoff
+    new_veh_drop_queue = []
+    for a_veh in veh_drop_q:
+        if a_veh.next_pickup.person_id < 0:
+            new_veh_drop_queue.append(a_veh)
+
+    len_veh_idle = len(veh_idle_q)
+    veh_idle_n_drop_Q = veh_idle_q + new_veh_drop_queue
+    tot_veh_length = len(veh_idle_n_drop_Q)
+
+    len_pass = len(pass_no_assign_q)
+    pass_veh_assign = [[pass_no_assign_q[n], Vehicle.Vehicle] for n in range(len_pass)]
+
+    temp_pass_no_assign_q = pass_no_assign_q[0:len(pass_no_assign_q)]
+
+    if len_veh_idle >= len_pass:  #Flo wants to possible consider this
+        used_vehicles = []
+        count_p = -1
+        for i_person in pass_no_assign_q:
+            count_p += 1
+            min_dist = Set.inf
+            win_veh_index = -1
+            veh_index = -1
+            for j_veh in veh_idle_n_drop_Q:
+                veh_index += 1
+                if veh_index >= len_veh_idle:
+                    dist = Distance.dyn_dist_manhat(i_person, j_veh)
+                else:
+                    dist = Distance.dist_manhat(i_person, j_veh)
+                # make sure that two persons aren't assigned to same vehicle
+                if dist < min_dist and not (j_veh.vehicle_id in used_vehicles):
+                    win_veh_index = veh_index
+                    min_dist = dist
+            if win_veh_index >= 0:
+                win_vehicle = veh_idle_n_drop_Q[win_veh_index]
+                used_vehicles.append(win_vehicle.vehicle_id)
+            else:
+                win_vehicle = Vehicle.Vehicle
+            pass_veh_assign[count_p] = [i_person, win_vehicle]
+
+    else:
+        for j_veh in veh_idle_n_drop_Q:
+            min_dist = Set.inf
+            win_pass_index = -1
+            pass_index = -1
+            for i_person in temp_pass_no_assign_q:
+                pass_index += 1
+                if j_veh.next_drop.person_id >= 0:
+                    dist = Distance.dyn_dist_manhat(i_person, j_veh)
+                else:
+                    dist = Distance.dist_manhat(i_person, j_veh)
                 if dist < min_dist:
                     win_pass_index = pass_index
                     min_dist = dist
