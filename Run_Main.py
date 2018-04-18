@@ -21,11 +21,11 @@ demand_Type = ["O_Uniform_D_Uniform"]
 
 fleet_size1 = [j for j in range(150, 171, 10)]
 fleet_size2 = [j for j in range(175, 251, 25)]
-fleet_size = [130] #fleet_size1 + fleet_size2
+fleet_size = [150] #fleet_size1 + fleet_size2
 
 hold_for = [10]
 
-opt_methods = [ "FCFS_smartNN", "FCFS_drop_smartNN", "FCFS_drop_smartNN2",
+opt_methods = [ "FCFS_smartNN", "FCFS_drop_smartNN",
                "match_idleOnly",  "match_idleDrop"]
             #"FCFS_longestIdle", "FCFS_nearestIdle","match_idlePick", , "match_idlePickDrop"
 

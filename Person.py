@@ -21,11 +21,11 @@ class Person(object):
     travel_time = -3
     vehicle_id = -3
     old_vehicles = []
-    state = "string"
+    status = "string"
     reassigned = 0
 
     # The class "constructor" - It's actually an initializer
-    def __init__(self, person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, state):
+    def __init__(self, person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, status):
         self.person_id = person_id
         self.pickup_location_x = pickup_location_x
         self.pickup_location_y = pickup_location_y
@@ -43,12 +43,12 @@ class Person(object):
         self.travel_time = -3
         self.vehicle_id = -3
         self.old_vehicles = []
-        self.state = state
+        self.status = status
         self.reassigned = 0
 
 
-def make_Person(person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, state):
-    person_a = Person(person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, state)
+def make_Person(person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, status):
+    person_a = Person(person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, status)
     return person_a
 
 def calculate_wait_assgn_time(request_time, assgn_time):
@@ -63,42 +63,42 @@ def calculate_travel_time(pickup_time, dropoff_time):
     travel_time = dropoff_time - pickup_time
     return travel_time
 
-def state_assigned():
-    state = "assigned"
-    return state
+def status_assigned():
+    status = "assigned"
+    return status
 
-def state_inVeh():
-    state = "inVeh"
-    return state
+def status_inVeh():
+    status = "inVeh"
+    return status
 
-def state_served():
-    state = "served"
-    return state
+def status_served():
+    status = "served"
+    return status
 
 
 def update_Person(t, person_1, vehicle1):
     
-    if person_1.state == "unassigned":
-        person_1.state = state_assigned()
+    if person_1.status == "unassigned":
+        person_1.status = status_assigned()
         person_1.vehicle_id = vehicle1.vehicle_id
         person_1.old_vehicles.append(vehicle1.vehicle_id)
         person_1.assign_time = t
         person_1.wait_assgn_time = calculate_wait_assgn_time(person_1.request_time, person_1.assign_time)
         
-    elif person_1.state  == "assigned":
-        person_1.state = state_inVeh()
+    elif person_1.status  == "assigned":
+        person_1.status = status_inVeh()
         person_1.vehicle_id = vehicle1.vehicle_id
         person_1.pickup_time = t
         person_1.wait_pick_time = calculate_wait_pick_time(person_1.request_time, person_1.pickup_time)
 
-    elif person_1.state  == "reassign":
-        person_1.state = state_assigned()
+    elif person_1.status  == "reassign":
+        person_1.status = status_assigned()
         person_1.vehicle_id = vehicle1.vehicle_id
         person_1.old_vehicles.append(vehicle1.vehicle_id)
         person_1.reassigned = 1
 
-    elif person_1.state == "inVeh":
-        person_1.state = state_served()
+    elif person_1.status == "inVeh":
+        person_1.status = status_served()
         person_1.dropoff_time = t
         person_1.travel_time = calculate_travel_time(person_1.pickup_time, person_1.dropoff_time)
 

@@ -4,6 +4,7 @@ import Person
 import Assignment_Algorithm as AA
 import numpy
 import sys
+import Regions
 __author__ = 'Mike'
 
 
@@ -33,9 +34,9 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
             dropoff_x = float(i_row[4])
             dropoff_y = float(i_row[5])
             group_size = int(i_row[6])
-            person_state = "unassigned"
+            person_status = "unassigned"
             People.append(Person.make_Person(person_id, pickup_x, pickup_y, request_time, dropoff_x, dropoff_y,
-                                             group_size, person_state))
+                                             group_size, person_status))
 
     # read in information about all vehicles
     # vehFile = open('../Inputs/Vehicles_Taxi.csv', 'r')
@@ -55,8 +56,8 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
             start_x = float(j_row[1])
             start_y = float(j_row[2])
             capacity = int(j_row[3])
-            veh_state = "idle"
-            Vehicles.append(Vehicle.make_Vehicle(vehicle_id, start_x, start_y, capacity, veh_state))
+            veh_status = "idle"
+            Vehicles.append(Vehicle.make_Vehicle(vehicle_id, start_x, start_y, capacity, veh_status))
 
     ##################################################################################################
     # Simulation
@@ -64,26 +65,52 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
 
     # Initialize Vectors
     i_person = 0
-    pass_no_assign__q = []
-    pass_no_pick__q = []
+    pass_no_assign_q = []
+    pass_no_pick_q = []
     fleet_size = len(Vehicles)
-    veh_idle__q = Vehicles[0:fleet_size]
-    veh_pick__q = []
-    veh_drop__q = []
+    veh_idle_q = Vehicles[0:fleet_size]
+    veh_pick_q = []
+    veh_drop_q = []
+    veh_relocate_q = []
 
     used_vehicles = []
 
-    # Begin simulation
+# Begin simulation
     for t in range(0, T_max, time_step):
 
-        ##################################################################################################
-        # Check to make sure vehicles have not been deleted or added to multiple queues
-        if len(veh_idle__q) + len(veh_pick__q) + len(veh_drop__q) != len(Vehicles):
+    ##################################################################################################
+    # Check to make sure vehicles have not been deleted or added to multiple queues
+        if len(veh_idle_q) + len(veh_pick_q) + len(veh_drop_q) != len(Vehicles):
             sys.exit("something wrong with vehicle queues")
 
-        ##################################################################################################
-        # move en_route drop-off vehicles
-        for i_veh_drop in veh_drop__q:
+    ##################################################################################################
+    # move relocating vehicles
+        for i_veh_relocate in veh_relocate_q:
+            if i_veh_relocate.curb_time_remain > 0:
+                i_veh_relocate.curb_time_remain = i_veh_relocate.curb_time_remain - 1
+
+            else:
+                next_sub_area = i_veh_relocate.next_sub_area
+
+
+                veh_id_relocate = i_veh_relocate.vehicle_id
+                Vehicles[veh_id_relocate] = Vehicle.moveVehicle_manhat(t, i_veh_drop, Person.Person, next_sub_area, opt_method)
+
+                # vehicle just dropped someone off and is now idle
+                if i_veh_drop.status == "idle":
+                    veh_idle_q.append(i_veh_drop)
+                    veh_drop_q.remove(i_veh_drop)
+                    People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
+
+                # vehicle just dropped someone off but already has a next pickup point
+                elif i_veh_drop.status == "enroute_pickup":
+                    People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
+                    veh_pick_q.append(i_veh_drop)
+                    veh_drop_q.remove(i_veh_drop)
+
+    ##################################################################################################
+    # move en_route drop-off vehicles
+        for i_veh_drop in veh_drop_q:
             if i_veh_drop.curb_time_remain > 0:
                 i_veh_drop.curb_time_remain = i_veh_drop.curb_time_remain - 1
 
@@ -92,23 +119,23 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                 person_drop = People[person_id_drop]
 
                 veh_id_drop = i_veh_drop.vehicle_id
-                Vehicles[veh_id_drop] = Vehicle.moveVehicle_manhat(t, i_veh_drop, person_drop, opt_method)
+                Vehicles[veh_id_drop] = Vehicle.moveVehicle_manhat(t, i_veh_drop, person_drop, Regions.SubArea, opt_method)
 
                 # vehicle just dropped someone off and is now idle
-                if i_veh_drop.state == "idle":
-                    veh_idle__q.append(i_veh_drop)
-                    veh_drop__q.remove(i_veh_drop)
+                if i_veh_drop.status == "idle":
+                    veh_idle_q.append(i_veh_drop)
+                    veh_drop_q.remove(i_veh_drop)
                     People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
 
                 # vehicle just dropped someone off but already has a next pickup point
-                elif i_veh_drop.state == "enroute_pickup":
+                elif i_veh_drop.status == "enroute_pickup":
                     People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
-                    veh_pick__q.append(i_veh_drop)
-                    veh_drop__q.remove(i_veh_drop)
+                    veh_pick_q.append(i_veh_drop)
+                    veh_drop_q.remove(i_veh_drop)
 
     ##################################################################################################
     # move en_route pickup vehicles
-        for ii_veh_pick in veh_pick__q:
+        for ii_veh_pick in veh_pick_q:
             if ii_veh_pick.curb_time_remain > 0:
                 ii_veh_pick.curb_time_remain = ii_veh_pick.curb_time_remain - 1
             else:
@@ -116,17 +143,17 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                 person_pick = People[person_id_pick]
 
                 veh_id_pick = ii_veh_pick.vehicle_id
-                Vehicles[veh_id_pick] = Vehicle.moveVehicle_manhat(t, ii_veh_pick, person_pick, opt_method)
+                Vehicles[veh_id_pick] = Vehicle.moveVehicle_manhat(t, ii_veh_pick, person_pick, Regions.SubArea, opt_method)
 
-                if ii_veh_pick.state == "enroute_dropoff":
-                    pass_no_pick__q.remove(person_pick)
-                    veh_drop__q.append(ii_veh_pick)
-                    veh_pick__q.remove(ii_veh_pick)
+                if ii_veh_pick.status == "enroute_dropoff":
+                    pass_no_pick_q.remove(person_pick)
+                    veh_drop_q.append(ii_veh_pick)
+                    veh_pick_q.remove(ii_veh_pick)
                     People[person_id_pick] = Person.update_Person(t, person_pick, ii_veh_pick)
 
     ##################################################################################################
     # update idle vehicles curb wait time
-        for iii_veh_idle in veh_idle__q:
+        for iii_veh_idle in veh_idle_q:
             if iii_veh_idle.curb_time_remain > 0:
                 iii_veh_idle.curb_time_remain = iii_veh_idle.curb_time_remain - 1
 
@@ -134,20 +161,20 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
     # check if there are new requests
         if i_person < len(People):
             while People[i_person].request_time <= t:
-                pass_no_assign__q.append(People[i_person])
+                pass_no_assign_q.append(People[i_person])
                 i_person += 1
                 if i_person == len(People):
                     break
 
-     ###################################################################################################
+    ###################################################################################################
     # Assign AVs to traveler requests
 
     ###################################################################################################
     # Assign using FCFS methods
         if "FCFS" in opt_method:
-            if len(pass_no_assign__q) > 0 and len(veh_idle__q + veh_drop__q) > 0:
+            if len(pass_no_assign_q) > 0 and len(veh_idle_q + veh_drop_q) > 0:
 
-                pass_veh_assgn = AA.assign_veh_fcfs(veh_idle__q, veh_drop__q, pass_no_assign__q, opt_method)
+                pass_veh_assgn = AA.assign_veh_fcfs(veh_idle_q, veh_drop_q, pass_no_assign_q, opt_method)
 
                 remaining_persons = []
                 used_vehicles = []
@@ -163,14 +190,14 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                         used_vehicles.append(j_vehicle)
 
                         # passenger assigned to an idle vehicle
-                        if j_vehicle in veh_idle__q:
-                            veh_pick__q.append(j_vehicle)
-                            pass_no_pick__q.append(i_pass)
+                        if j_vehicle in veh_idle_q:
+                            veh_pick_q.append(j_vehicle)
+                            pass_no_pick_q.append(i_pass)
 
                         # passenger assigned to non-idle vehicle
                         else:
-                            pass_no_pick__q.append(i_pass)
-                            j_vehicle.state = "new_assign"
+                            pass_no_pick_q.append(i_pass)
+                            j_vehicle.status = "new_assign"
 
                         People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
                         Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
@@ -179,44 +206,44 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                         sys.exit("Error in Assignment!")
 
                 len_remain = len(remaining_persons)
-                pass_no_assign__q = remaining_persons[0:len_remain]
+                pass_no_assign_q = remaining_persons[0:len_remain]
 
                 # remove vehicles that have been assigned to a passenger from the vehicle_idle_queue
                 for i_used in used_vehicles:
-                    if i_used in veh_idle__q:
-                        veh_idle__q.remove(i_used)
+                    if i_used in veh_idle_q:
+                        veh_idle_q.remove(i_used)
 
     ###################################################################################################
     # Assign using Optimization-based methods
         else:
             # Every X seconds assign passengers in the waiting queue to a vehicle
             if t % hold_for == 0:
-                # if len(pass_no_assign__q) > 0 and len(veh_idle__q) > 0: # Mike -  check removing second if condition
-                if len(pass_no_assign__q) > 0:
+                # if len(pass_no_assign_q) > 0 and len(veh_idle_q) > 0: # Mike -  check removing second if condition
+                if len(pass_no_assign_q) > 0:
                     pass_veh_assign1 = []
-                    temp_veh_pick__q = veh_pick__q[0:len(veh_pick__q)]
-                    temp_pass_no_pick__q = pass_no_pick__q[0:len(pass_no_pick__q)]
+                    temp_veh_pick__q = veh_pick_q[0:len(veh_pick_q)]
+                    temp_pass_no_pick__q = pass_no_pick_q[0:len(pass_no_pick_q)]
 
-                    for j_car in veh_pick__q:
+                    for j_car in veh_pick_q:
                         if j_car.next_pickup.reassigned == 1:
                             pass_veh_assign1.append([j_car.next_pickup, j_car])
                             temp_veh_pick__q.remove(j_car)
                             temp_pass_no_pick__q.remove(j_car.next_pickup)
 
-                    pass_veh_assign2 = AA.assign_veh_opt(veh_idle__q, temp_veh_pick__q, veh_drop__q,
-                                                         pass_no_assign__q, temp_pass_no_pick__q, opt_method, t)
+                    pass_veh_assign2 = AA.assign_veh_opt(veh_idle_q, temp_veh_pick__q, veh_drop_q,
+                                                         pass_no_assign_q, temp_pass_no_pick__q, opt_method, t)
                     pass_veh_assgn = pass_veh_assign2 + pass_veh_assign1
 
                     remaining_persons = []
                     check_used_vehicles = used_vehicles[0:len(used_vehicles)]  # used_vehicles + reassign_veh
                     used_vehicles = []
-                    old_veh_pick_q = veh_pick__q[0:len(veh_pick__q)]
+                    old_veh_pick_q = veh_pick_q[0:len(veh_pick_q)]
                     for [i_pass, j_vehicle] in pass_veh_assgn:
 
                         # passenger is not assigned to a real vehicle, and the person is real
                         if j_vehicle.vehicle_id < 0:
                             remaining_persons.append(i_pass)
-                            if i_pass in pass_no_pick__q:
+                            if i_pass in pass_no_pick_q:
                                 sys.exit("Error - traveler was assigned, now is unassigned")
 
                         # passenger re-assigned to vehicle he/she already were assigned to
@@ -228,39 +255,39 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                             used_vehicles.append(j_vehicle)
 
                             # passenger assigned to an idle vehicle
-                            if j_vehicle in veh_idle__q:
+                            if j_vehicle in veh_idle_q:
 
                                 # if passenger already had a vehicle coming towards it, but then assigned a new vehicle
                                 if i_pass.vehicle_id >= 0:
-                                    i_pass.state = "reassign"
+                                    i_pass.status = "reassign"
                                 else:
-                                    pass_no_pick__q.append(i_pass)
+                                    pass_no_pick_q.append(i_pass)
 
-                                veh_pick__q.append(j_vehicle)
+                                veh_pick_q.append(j_vehicle)
 
                             # passenger assigned to non-idle vehicle
                             else:
                                 if opt_method == "match_idleDrop":
-                                    pass_no_pick__q.append(i_pass)
-                                    j_vehicle.state = "new_assign"
+                                    pass_no_pick_q.append(i_pass)
+                                    j_vehicle.status = "new_assign"
 
                                 elif opt_method == "match_idlePick":
-                                    j_vehicle.state = "reassign"
+                                    j_vehicle.status = "reassign"
                                     if i_pass.vehicle_id >= 0:
-                                        i_pass.state = "reassign"
+                                        i_pass.status = "reassign"
                                     else:
-                                        pass_no_pick__q.append(i_pass)
+                                        pass_no_pick_q.append(i_pass)
 
                                 elif opt_method == "match_idlePickDrop":
                                     if i_pass.vehicle_id >= 0:
-                                        i_pass.state = "reassign"
+                                        i_pass.status = "reassign"
                                     else:
-                                        pass_no_pick__q.append(i_pass)
+                                        pass_no_pick_q.append(i_pass)
 
-                                    if j_vehicle in veh_pick__q:
-                                        j_vehicle.state = "reassign"
-                                    elif j_vehicle in veh_drop__q:
-                                        j_vehicle.state = "new_assign"
+                                    if j_vehicle in veh_pick_q:
+                                        j_vehicle.status = "reassign"
+                                    elif j_vehicle in veh_drop_q:
+                                        j_vehicle.status = "new_assign"
                                     else:
                                         sys.exit("Error - something wrong with j_vehicle in match_idlePickDrop")
 
@@ -271,32 +298,32 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                             sys.exit("Error in Assignment!")
 
                     len_remain = len(remaining_persons)
-                    pass_no_assign__q = remaining_persons[0:len_remain]
+                    pass_no_assign_q = remaining_persons[0:len_remain]
 
                     # remove vehicles that have been  assigned to a passenger from the vehicle_idle_queue
                     for i_used in used_vehicles:
-                        if i_used in veh_idle__q:
-                            veh_idle__q.remove(i_used)
+                        if i_used in veh_idle_q:
+                            veh_idle_q.remove(i_used)
 
                     # vehicle was going to pick up traveler, now it is not
                     if opt_method == "match_idlePick":
                         for ijk_veh in old_veh_pick_q:
                             if ijk_veh not in used_vehicles:
-                                ijk_veh.state = "unassign"
+                                ijk_veh.status = "unassign"
                                 Vehicles[ijk_veh.vehicle_id] = Vehicle.update_Vehicle(t, Person.Person,
                                                                                       ijk_veh, opt_method)
-                                veh_pick__q.remove(ijk_veh)
-                                veh_idle__q.append(ijk_veh)
+                                veh_pick_q.remove(ijk_veh)
+                                veh_idle_q.append(ijk_veh)
 
                     if opt_method == "match_idlePickDrop":
                         for abc_veh in check_used_vehicles:
                             if abc_veh not in used_vehicles:  # and abc_veh not in reassgn_veh_pick_Q:
-                                abc_veh.state = "unassign"
+                                abc_veh.status = "unassign"
                                 Vehicles[abc_veh.vehicle_id] = Vehicle.update_Vehicle(t, Person.Person,
                                                                                       abc_veh, opt_method)
-                                if abc_veh in veh_pick__q:
-                                    veh_pick__q.remove(abc_veh)
-                                    veh_idle__q.append(abc_veh)
+                                if abc_veh in veh_pick_q:
+                                    veh_pick_q.remove(abc_veh)
+                                    veh_idle_q.append(abc_veh)
 
     ##################################################################################################
     # Simulation Over
@@ -309,10 +336,10 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
     # Traveler Metrics ###############
 
     # Incomplete Travelers Metrics
-    num_served = (list(p.state for p in People)).count("served")
-    num_in_veh = (list(p.state for p in People)).count("inVeh")
-    num_assgnd = (list(p.state for p in People)).count("assigned")
-    num_unassgnd = (list(p.state for p in People)).count("unassigned")
+    num_served = (list(p.status for p in People)).count("served")
+    num_in_veh = (list(p.status for p in People)).count("inVeh")
+    num_assgnd = (list(p.status for p in People)).count("assigned")
+    num_unassgnd = (list(p.status for p in People)).count("unassigned")
     print("num_unassgnd", num_unassgnd)
 
     # Quality of Service Metrics
@@ -322,20 +349,20 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
     metric__people = People[start:end]
     num_metric_people = len(metric__people)
 
-    # perc__rideshare = round(numpy.mean(list(p.rideshare for p in metric__people if p.state == "served")),2)
-    perc_reassigned = round(numpy.mean(list(p.reassigned for p in metric__people if p.state == "served")),2)
+    # perc__rideshare = round(numpy.mean(list(p.rideshare for p in metric__people if p.status == "served")),2)
+    perc_reassigned = round(numpy.mean(list(p.reassigned for p in metric__people if p.status == "served")),2)
 
-    mean_ivtt = int(numpy.mean(list(p.travel_time for p in metric__people if p.state == "served")))
-    sd_ivtt = int(numpy.std(list(p.travel_time for p in metric__people if p.state == "served")))
+    mean_ivtt = int(numpy.mean(list(p.travel_time for p in metric__people if p.status == "served")))
+    sd_ivtt = int(numpy.std(list(p.travel_time for p in metric__people if p.status == "served")))
 
-    mean_wait_pick = int(numpy.mean(list(p.wait_pick_time for p in metric__people if p.state == "served")))
-    sd_wait_pick = int(numpy.std(list(p.wait_pick_time for p in metric__people if p.state == "served")))
+    mean_wait_pick = int(numpy.mean(list(p.wait_pick_time for p in metric__people if p.status == "served")))
+    sd_wait_pick = int(numpy.std(list(p.wait_pick_time for p in metric__people if p.status == "served")))
 
-    mean_wait_assgn = int(numpy.mean(list(p.wait_assgn_time for p in metric__people if p.state == "served")))
-    sd_wait_assgn = int(numpy.std(list(p.wait_assgn_time for p in metric__people if p.state == "served")))
+    mean_wait_assgn = int(numpy.mean(list(p.wait_assgn_time for p in metric__people if p.status == "served")))
+    sd_wait_assgn = int(numpy.std(list(p.wait_assgn_time for p in metric__people if p.status == "served")))
 
-    mean_trip_dist = round(numpy.mean(list(p.in_veh_dist for p in metric__people if p.state == "served"))/5280, 3)
-    sd_trip_dist = round(numpy.std(list(p.in_veh_dist for p in metric__people if p.state == "served"))/5280, 3)
+    mean_trip_dist = round(numpy.mean(list(p.in_veh_dist for p in metric__people if p.status == "served"))/5280, 3)
+    sd_trip_dist = round(numpy.std(list(p.in_veh_dist for p in metric__people if p.status == "served"))/5280, 3)
 
     # Vehicle Metrics ###############
 
