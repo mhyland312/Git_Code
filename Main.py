@@ -90,23 +90,14 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                 i_veh_relocate.curb_time_remain = i_veh_relocate.curb_time_remain - 1
 
             else:
-                next_sub_area = i_veh_relocate.next_sub_area
+                sub_area = i_veh_relocate.next_sub_area
+                i_veh_relocate = Vehicle.moveVehicle_manhat(t, i_veh_relocate, Person.Person, sub_area, opt_method)
 
-
-                veh_id_relocate = i_veh_relocate.vehicle_id
-                Vehicles[veh_id_relocate] = Vehicle.moveVehicle_manhat(t, i_veh_drop, Person.Person, next_sub_area, opt_method)
-
-                # vehicle just dropped someone off and is now idle
-                if i_veh_drop.status == "idle":
-                    veh_idle_q.append(i_veh_drop)
-                    veh_drop_q.remove(i_veh_drop)
-                    People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
-
-                # vehicle just dropped someone off but already has a next pickup point
-                elif i_veh_drop.status == "enroute_pickup":
-                    People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
-                    veh_pick_q.append(i_veh_drop)
-                    veh_drop_q.remove(i_veh_drop)
+                # vehicle just made it to subArea relocation centroid and is idle
+                if i_veh_relocate.status == "idle":
+                    veh_idle_q.append(i_veh_relocate)
+                    veh_relocate_q.remove(i_veh_relocate)
+                    #may need to update subArea
 
     ##################################################################################################
     # move en_route drop-off vehicles
@@ -115,21 +106,25 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                 i_veh_drop.curb_time_remain = i_veh_drop.curb_time_remain - 1
 
             else:
-                person_id_drop = i_veh_drop.next_drop.person_id
-                person_drop = People[person_id_drop]
+                person_drop = i_veh_drop.next_drop
+                #person_id_drop = i_veh_drop.next_drop.person_id #Mike Check Change
+                #person_drop = People[person_id_drop] #Mike Check Change
 
-                veh_id_drop = i_veh_drop.vehicle_id
-                Vehicles[veh_id_drop] = Vehicle.moveVehicle_manhat(t, i_veh_drop, person_drop, Regions.SubArea, opt_method)
+                #veh_id_drop = i_veh_drop.vehicle_id
+                i_veh_drop = Vehicle.moveVehicle_manhat(t, i_veh_drop, person_drop, Regions.SubArea, opt_method)
+                # Vehicles[veh_id_drop] = Vehicle.moveVehicle_manhat(t, i_veh_drop, person_drop, Regions.SubArea, opt_method)  #Mike Check Change
 
                 # vehicle just dropped someone off and is now idle
                 if i_veh_drop.status == "idle":
                     veh_idle_q.append(i_veh_drop)
                     veh_drop_q.remove(i_veh_drop)
-                    People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
+                    Person.update_Person(t, person_drop, i_veh_drop)
+                    # People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop) #Mike Check Change
 
                 # vehicle just dropped someone off but already has a next pickup point
                 elif i_veh_drop.status == "enroute_pickup":
-                    People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop)
+                    Person.update_Person(t, person_drop, i_veh_drop)
+                    #People[person_id_drop] = Person.update_Person(t, person_drop, i_veh_drop) #Mike Check Change
                     veh_pick_q.append(i_veh_drop)
                     veh_drop_q.remove(i_veh_drop)
 
@@ -143,13 +138,15 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                 person_pick = People[person_id_pick]
 
                 veh_id_pick = ii_veh_pick.vehicle_id
-                Vehicles[veh_id_pick] = Vehicle.moveVehicle_manhat(t, ii_veh_pick, person_pick, Regions.SubArea, opt_method)
+                #Vehicles[veh_id_pick] = Vehicle.moveVehicle_manhat(t, ii_veh_pick, person_pick, Regions.SubArea, opt_method)
+                Vehicle.moveVehicle_manhat(t, ii_veh_pick, person_pick, Regions.SubArea, opt_method)
 
                 if ii_veh_pick.status == "enroute_dropoff":
                     pass_no_pick_q.remove(person_pick)
                     veh_drop_q.append(ii_veh_pick)
                     veh_pick_q.remove(ii_veh_pick)
-                    People[person_id_pick] = Person.update_Person(t, person_pick, ii_veh_pick)
+                    #People[person_id_pick] = Person.update_Person(t, person_pick, ii_veh_pick)
+                    Person.update_Person(t, person_pick, ii_veh_pick)
 
     ##################################################################################################
     # update idle vehicles curb wait time
@@ -199,8 +196,10 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                             pass_no_pick_q.append(i_pass)
                             j_vehicle.status = "new_assign"
 
-                        People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
-                        Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
+                        # People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
+                        Person.update_Person(t, i_pass, j_vehicle)
+                        # Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
+                        Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
 
                     else:
                         sys.exit("Error in Assignment!")
@@ -291,8 +290,10 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                                     else:
                                         sys.exit("Error - something wrong with j_vehicle in match_idlePickDrop")
 
-                            People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
-                            Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
+                            #People[i_pass.person_id] = Person.update_Person(t, i_pass, j_vehicle)
+                            Person.update_Person(t, i_pass, j_vehicle)
+                            #Vehicles[j_vehicle.vehicle_id] = Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
+                            Vehicle.update_Vehicle(t, i_pass, j_vehicle, opt_method)
 
                         else:
                             sys.exit("Error in Assignment!")
@@ -310,8 +311,9 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                         for ijk_veh in old_veh_pick_q:
                             if ijk_veh not in used_vehicles:
                                 ijk_veh.status = "unassign"
-                                Vehicles[ijk_veh.vehicle_id] = Vehicle.update_Vehicle(t, Person.Person,
-                                                                                      ijk_veh, opt_method)
+                                #Vehicles[ijk_veh.vehicle_id] = Vehicle.update_Vehicle(t, Person.Person,
+                                                                                      #ijk_veh, opt_method)
+                                Vehicle.update_Vehicle(t, Person.Person, ijk_veh, opt_method)
                                 veh_pick_q.remove(ijk_veh)
                                 veh_idle_q.append(ijk_veh)
 
@@ -319,8 +321,9 @@ def main(hold_for, T_max, time_step, opt_method, veh_speed, i_run, taxi):
                         for abc_veh in check_used_vehicles:
                             if abc_veh not in used_vehicles:  # and abc_veh not in reassgn_veh_pick_Q:
                                 abc_veh.status = "unassign"
-                                Vehicles[abc_veh.vehicle_id] = Vehicle.update_Vehicle(t, Person.Person,
-                                                                                      abc_veh, opt_method)
+                                #Vehicles[abc_veh.vehicle_id] = Vehicle.update_Vehicle(t, Person.Person,
+                                                                                      #abc_veh, opt_method)
+                                Vehicle.update_Vehicle(t, Person.Person, abc_veh, opt_method)
                                 if abc_veh in veh_pick_q:
                                     veh_pick_q.remove(abc_veh)
                                     veh_idle_q.append(abc_veh)
