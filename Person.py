@@ -47,7 +47,7 @@ class Person(object):
         self.reassigned = 0
 
 
-def make_Person(person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, status):
+def make_person(person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, status):
     person_a = Person(person_id, pickup_location_x, pickup_location_y, request_time, dropoff_location_x, dropoff_location_y, group_size, status)
     return person_a
 

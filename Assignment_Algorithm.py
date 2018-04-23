@@ -10,31 +10,32 @@ __author__ = 'Mike'
 #############################################################################################################
 def assign_veh_fcfs(veh_idle_q, veh_drop_q, pass_no_assign_q, opt_method):
     answer = "blank"
-    if opt_method == "FCFS_longestIdle":
+    if opt_method == "1_FCFS_longestIdle":
         answer = fcfs_longest_idle(veh_idle_q, pass_no_assign_q)
-    elif opt_method == "FCFS_nearestIdle":
+    elif opt_method == "2_FCFS_nearestIdle":
         answer = fcfs_nearest_idle(veh_idle_q, pass_no_assign_q)
-    elif opt_method == "FCFS_smartNN":
+    elif opt_method == "3_FCFS_smartNN":
         answer = FCFS_smartNN(veh_idle_q, pass_no_assign_q)
-    elif opt_method == "FCFS_drop_smartNN":
+    elif opt_method == "4_FCFS_drop_smartNN":
         answer = FCFS_drop_smartNN(veh_idle_q, veh_drop_q, pass_no_assign_q)
-    elif opt_method == "FCFS_drop_smartNN2":
+    elif opt_method == "4a_FCFS_drop_smartNN2":
         answer = FCFS_drop_smartNN(veh_idle_q, veh_drop_q, pass_no_assign_q)
     else:
         print("Error: No_FCFS_assignment_method")
     return answer
 #############################################################################################################
 
+
 #############################################################################################################
 def assign_veh_opt(veh_idle_q, veh_pick_q, veh_drop_q, pass_no_assign_q, pass_no_pick_q, opt_method, t):
     answer = "blank"
-    if opt_method == "match_idleOnly":
+    if opt_method == "5_match_idleOnly":
         answer = idleOnly_minDist(veh_idle_q, pass_no_assign_q, t)
-    elif opt_method == "match_idlePick":
+    elif opt_method == "6_match_idlePick":
         answer = idlePick_minDist(veh_idle_q, veh_pick_q, pass_no_assign_q, pass_no_pick_q, t)
-    elif opt_method == "match_idleDrop":
+    elif opt_method == "7_match_idleDrop":
         answer = idleDrop_minDist(veh_idle_q, veh_drop_q, pass_no_assign_q, pass_no_pick_q, t)
-    elif opt_method == "match_idlePickDrop":
+    elif opt_method == "8_match_idlePickDrop":
         answer = idlePickDrop_minDist(veh_idle_q, veh_pick_q, veh_drop_q, pass_no_assign_q, pass_no_pick_q, t)
     else:
         print("Error: No_assignment_method")
@@ -596,9 +597,8 @@ def idlePickDrop_minDist(veh_idle_q, veh_pick_q, veh_drop_q, pass_no_assign_q, p
         for m_pass in range(len_pass_noPickAssign):
             for n_veh in range(tot_veh_length):
                 if x[m_pass][n_veh].X > 0 and x[m_pass][n_veh].X < 1:
-                    sys.exit("Non Binary Variable- idlePickDrop_minDist")
+                    sys.exit("Non Binary Variable - idlePickDrop_minDist")
                 if x[m_pass][n_veh].X == 1:
-                    # print (x[m_pass][n_veh].X )
                     pass_veh_assign[m_pass] = [pass_noAssignPick_Q[m_pass], all_veh[n_veh]]
                     break
     else:
