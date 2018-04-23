@@ -54,7 +54,7 @@ results_writer2.writerow(
 
 for a_demand_rate in requests_per_hour:
     for k_hold_for in hold_for:
-        for p_demand_type in demand_Type:
+        for p_demand_type in demand_Type: #hel
             for q_area_size in area_size:
                 for m_opt_method in opt_methods:
                     for j_fleet_size in fleet_size:
