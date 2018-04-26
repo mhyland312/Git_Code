@@ -39,6 +39,7 @@ class Vehicle(object):
     pass_assgn_count = 0
     pass_pick_count = 0
     pass_drop_count = 0
+    reposition_count = 0
 
     # The class "constructor" - It's actually an initializer
     def __init__(self, vehicle_id, start_location_x, start_location_y, capacity, status):
@@ -74,6 +75,7 @@ class Vehicle(object):
         self.pass_assgn_count = 0
         self.pass_pick_count = 0
         self.pass_drop_count = 0
+        self.reposition_count = 0
 
 
 # function to create an instance of class/object vehicle
@@ -123,7 +125,7 @@ def move_vehicle_manhat(t, vehicle, person, sub_area):
     # if the vehicle is right next to the pickup/dropoff point
     if total_dist_manhat < Settings.delta_veh_dist:
         temp_veh_status = "at_destination"
-        update_vehicle(t, person, vehicle, Regions.SubArea, temp_veh_status)
+        update_vehicle(t, person, vehicle, sub_area, temp_veh_status)
         vehicle.total_distance += total_dist_manhat
 
     else:  # move vehicle one step closer to destination
@@ -191,8 +193,10 @@ def get_next_availability(vehicle):
         else:
             last_x = i_pass.dropoff_location_x
             last_y = i_pass.dropoff_location_y
+
     # elif vehicle.status == "relocating":
-    #     not ready yet
+    #     Dandl -   I do not think we need to add this:
+    #               The relocating AV is currently 'available'
 
     return last_x, last_y, total_rem_dist
 
@@ -257,8 +261,9 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
             vehicle.current_load = vehicle.current_load - person1.group_size
             vehicle.position_x = person1.dropoff_location_x
             vehicle.position_y = person1.dropoff_location_y
-            vehicle.reassigned = 0
             vehicle.curb_time_remain = Settings.curb_drop_time
+            vehicle.next_drop = Person.Person
+            vehicle.next_sub_area = Regions.SubArea
 
             # Option 1b,i
             # after drop-off, check to see if AV has next traveler to pick up
@@ -267,8 +272,6 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
                 vehicle.current_dest_x = vehicle.next_pickup.pickup_location_x
                 vehicle.current_dest_y = vehicle.next_pickup.pickup_location_y
                 vehicle.next_pickup = vehicle.next_pickup
-                vehicle.next_drop = Person.Person
-                vehicle.next_sub_area = Regions.SubArea
                 vehicle.status = "enroute_pickup"
 
             # Option 1b,ii
@@ -278,8 +281,6 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
                 vehicle.current_dest_x = vehicle.position_x
                 vehicle.current_dest_y = vehicle.position_y
                 vehicle.next_pickup = Person.Person
-                vehicle.next_drop = Person.Person
-                vehicle.next_sub_area = Regions.SubArea
                 vehicle.status = "idle"
 
             # output information
@@ -290,14 +291,16 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
         # Option 1c - AV reached relocation centroid
         elif vehicle.status == "relocating":
             # dynamic information
-            vehicle.position_x = Regions.SubArea.relocation_destination[0]
-            vehicle.position_y = Regions.SubArea.relocation_destination[1]
+            vehicle.position_x = sub_area.relocation_destination[0]
+            vehicle.position_y = sub_area.relocation_destination[1]
             vehicle.next_sub_area = Regions.Area
             vehicle.status = "idle"
 
+            # output information
+            vehicle.reposition_count += 1
+
         else:
             sys.exit("At Destination, no proper Vehicle Status")
-
 
     # Option 2 - idle AV assigned to pickup a traveler
     elif temp_veh_status == "base_assign":
@@ -317,7 +320,6 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
         vehicle.assigned_times.append(t)
         vehicle.pass_assgn_count += 1
 
-
     # Option 3 - En-route Drop-off AV assigned to its next pickup
     elif temp_veh_status == "new_assign":
         # dynamic information
@@ -329,7 +331,6 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
         vehicle.pass_assgn_list.append(person1.person_id)
         vehicle.assigned_times.append(t)
         vehicle.pass_assgn_count += 1
-
 
     # Option 4 - AV reassigned from one traveler to another
     elif temp_veh_status == "reassign":
@@ -360,310 +361,22 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
             vehicle.status = "idle"
         # current load, position_x/y, next_drop, status, reassigned, curb_remain_time - do not change
 
+    # Option 5 - AV was assigned to relocate/reposition to a different subArea
+    # Dandl - check to make sure this makes sense
+    elif temp_veh_status == "relocate":
+
+        # dynamic information
+        vehicle.current_load = 0
+        vehicle.current_dest_x = sub_area.relocation_destination[0]
+        vehicle.current_dest_y = sub_area.relocation_destination[1]
+        vehicle.next_pickup = Person.Person
+        vehicle.next_drop = Person.Person
+        vehicle.next_sub_area = sub_area
+        vehicle.status = "relocating"
+        vehicle.reassigned = 0
+
+        # output information
+        vehicle.reposition_count += 1
+
     else:
         sys.exit("update Vehicle - no Proper Vehicle Status")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-########################################################################################################
-########################################################################################################
-
-# def update_Vehicle_old(t, person1, vehicle, opt_method):
-#     # For vehicles going from idle, to pickup, update Vehicle is the same for all opt methods
-#     if vehicle.status == "idle":
-#         vehicle.pass_toPickup.append(person1)
-#         vehicle.current_dest_x = person1.pickup_location_x
-#         vehicle.current_dest_y = person1.pickup_location_y
-#         vehicle.next_pickup = person1
-#         vehicle.status = "enroute_pickup"
-#
-#         vehicle.pass_assgn_list.append(person1.person_id)
-#         vehicle.assigned_times.append(t)
-#         vehicle.pass_assgn_count += 1
-#
-#         # For all other vehicle status changes - update Vehicle varies by opt method
-#     else:
-#         # comment:
-#         # necessity to treat queued passengers in FCFS_drop_smartNN
-#         # 1) either add code from match_idleDrop to FCFS
-#         # 2) changing opt_method for FCFS from FCFS_drop_smartNN
-#         # the first should be the cleaner solution, but to reduce risk of unwanted control structure,
-          # I will use the second method and modify the string
-#         if opt_method == "FCFS_drop_smartNN" or "FCFS_drop_smartNN2":
-#             opt_method = "match_idleDrop"
-#             # Opt method 1
-#         if opt_method == "match_idleOnly" or "FCFS" in opt_method:
-#             # just picked up passenger - now need to drop him/her off
-#             if vehicle.status == "enroute_pickup":
-#                 vehicle.pass_inVeh.append(person1)
-#                 vehicle.pass_toPickup.remove(person1)
-#                 vehicle.current_load += person1.group_size
-#                 vehicle.position_x = person1.pickup_location_x
-#                 vehicle.position_y = person1.pickup_location_y
-#                 vehicle.current_dest_x = person1.dropoff_location_x
-#                 vehicle.current_dest_y = person1.dropoff_location_y
-#                 vehicle.next_pickup = Person.Person
-#                 vehicle.next_drop = person1
-#                 vehicle.status = "enroute_dropoff"
-#                 vehicle.curb_time_remain = Settings.curb_pick_time
-#
-#                 vehicle.pass_picked_list.append(person1.person_id)
-#                 vehicle.pickup_times.append(t)
-#                 vehicle.pass_pick_count += 1
-#
-#             # just dropped off passenger - now vehicle is idle
-#             elif vehicle.status == "enroute_dropoff":
-#                 vehicle.pass_inVeh.remove(person1)
-#                 vehicle.current_load -= person1.group_size
-#                 vehicle.position_x = person1.dropoff_location_x
-#                 vehicle.position_y = person1.dropoff_location_y
-#                 vehicle.next_drop = Person.Person
-#                 vehicle.status = "idle"
-#                 vehicle.curb_time_remain = Settings.curb_drop_time
-#
-#                 vehicle.pass_dropped_list.append(person1.person_id)
-#                 vehicle.dropoff_times.append(t)
-#                 vehicle.pass_drop_count += 1
-#             else:
-#                 print("Error No Proper Status - Opt Method 1")
-#
-#                 # Opt method 3
-#         elif opt_method == "match_idleDrop":
-#             # just picked up passenger - now need to drop him/her off
-#             # Nothing different than base case
-#             if vehicle.status == "enroute_pickup":
-#                 vehicle.pass_inVeh.append(person1)
-#                 vehicle.pass_toPickup.remove(person1)
-#                 vehicle.current_load += person1.group_size
-#                 vehicle.position_x = person1.pickup_location_x
-#                 vehicle.position_y = person1.pickup_location_y
-#                 vehicle.current_dest_x = person1.dropoff_location_x
-#                 vehicle.current_dest_y = person1.dropoff_location_y
-#                 vehicle.next_pickup = Person.Person
-#                 vehicle.next_drop = person1
-#                 vehicle.status = "enroute_dropoff"
-#                 vehicle.curb_time_remain = Settings.curb_pick_time
-#
-#                 vehicle.pass_picked_list.append(person1.person_id)
-#                 vehicle.pickup_times.append(t)
-#                 vehicle.pass_pick_count += 1
-#
-#             # just dropped off passenger - now idle - but might already have another pickup lined-up
-#             elif vehicle.status == "enroute_dropoff":
-#                 # Case 1: No one else to pickup
-#                 if len(vehicle.pass_toPickup) == 0:
-#                     vehicle.pass_inVeh.remove(person1)
-#                     vehicle.current_load -= person1.group_size
-#                     vehicle.position_x = person1.dropoff_location_x
-#                     vehicle.position_y = person1.dropoff_location_y
-#                     vehicle.next_pickup = Person.Person
-#                     vehicle.next_drop = Person.Person
-#                     vehicle.status = "idle"
-#                     vehicle.curb_time_remain = Settings.curb_drop_time
-#                 # Case 2: Already have next passenger to pickup
-#                 else:
-#                     vehicle.pass_inVeh.remove(person1)
-#                     vehicle.current_load -= person1.group_size
-#                     vehicle.position_x = person1.dropoff_location_x
-#                     vehicle.position_y = person1.dropoff_location_y
-#                     vehicle.next_drop = Person.Person
-#                     vehicle.curb_time_remain = Settings.curb_drop_time
-#                     ####different for idleDrop##########
-#                     vehicle.next_pickup = vehicle.pass_toPickup[0]
-#                     vehicle.status = "enroute_pickup"
-#                     next_pickup_pass = vehicle.next_pickup
-#                     vehicle.current_dest_x = next_pickup_pass.pickup_location_x
-#                     vehicle.current_dest_y = next_pickup_pass.pickup_location_y
-#                     ######################################
-#
-#                 vehicle.pass_dropped_list.append(person1.person_id)
-#                 vehicle.dropoff_times.append(t)
-#                 vehicle.pass_drop_count += 1
-#
-#             # another case unique to this opt method. enroute dropoff vehicle assigned to next passenger
-#             elif vehicle.status == "new_assign":
-#                 vehicle.pass_toPickup.append(person1)
-#                 vehicle.next_pickup = person1
-#                 vehicle.status = "enroute_dropoff"
-#
-#                 vehicle.pass_assgn_list.append(person1.person_id)
-#                 vehicle.assigned_times.append(t)
-#                 vehicle.pass_assgn_count += 1
-#
-#             else:
-#                 print("Error No Proper Status - Opt Method 3")
-#
-#                 # Opt method 4
-#         elif opt_method == "match_idlePick":
-#             # same as base idle-only case, except for a special case where vehicles are reassigned
-#             if vehicle.status == "enroute_pickup":
-#                 vehicle.pass_inVeh.append(person1)
-#                 vehicle.pass_toPickup.remove(person1)
-#                 vehicle.current_load += person1.group_size
-#                 vehicle.position_x = person1.pickup_location_x
-#                 vehicle.position_y = person1.pickup_location_y
-#                 vehicle.current_dest_x = person1.dropoff_location_x
-#                 vehicle.current_dest_y = person1.dropoff_location_y
-#                 vehicle.next_pickup = Person.Person
-#                 vehicle.next_drop = person1
-#                 vehicle.status = "enroute_dropoff"
-#                 vehicle.curb_time_remain = Settings.curb_pick_time
-#
-#                 vehicle.pass_picked_list.append(person1.person_id)
-#                 vehicle.pickup_times.append(t)
-#                 vehicle.pass_pick_count += 1
-#
-#             # just dropped off passenger - now idle
-#             elif vehicle.status == "enroute_dropoff":
-#                 vehicle.pass_inVeh.remove(person1)
-#                 vehicle.current_load -= person1.group_size
-#                 vehicle.position_x = person1.dropoff_location_x
-#                 vehicle.position_y = person1.dropoff_location_y
-#                 vehicle.next_pickup = Person.Person
-#                 vehicle.next_drop = Person.Person
-#                 vehicle.status = "idle"
-#                 vehicle.curb_time_remain = Settings.curb_drop_time
-#
-#                 vehicle.pass_dropped_list.append(person1.person_id)
-#                 vehicle.dropoff_times.append(t)
-#                 vehicle.pass_drop_count += 1
-#                 vehicle.reassigned = 0
-#
-#             # was en_route to  pickup, but have been reassigned
-#             elif vehicle.status == "reassign":
-#                 ####different#######
-#                 vehicle.pass_toPickup.remove(vehicle.pass_toPickup[0])
-#                 ######################################
-#                 vehicle.pass_toPickup.append(person1)
-#                 vehicle.current_dest_x = person1.pickup_location_x
-#                 vehicle.current_dest_y = person1.pickup_location_y
-#                 vehicle.next_pickup = person1
-#                 vehicle.status = "enroute_pickup"
-#
-#                 vehicle.pass_assgn_list.append(person1.person_id)
-#                 vehicle.assigned_times.append(t)
-#                 vehicle.pass_assgn_count += 1
-#                 vehicle.reassigned = 1
-#
-#             elif vehicle.status == "unassign":
-#                 vehicle.pass_toPickup = []
-#                 vehicle.current_dest_x = -1.0
-#                 vehicle.current_dest_y = -1.0
-#                 vehicle.next_pickup = Person.Person
-#                 vehicle.status = "idle"
-#                 vehicle.reassigned = 0
-#             else:
-#                 sys.exit("Error No Proper Status - Opt Method 4")
-#
-#                 # Opt method 5
-#         elif opt_method == "match_idlePickDrop":
-#
-#             # same as base idle-only case, except for a special case where vehicles are reassigned
-#             if vehicle.status == "enroute_pickup":
-#                 vehicle.pass_inVeh.append(person1)
-#                 vehicle.pass_toPickup.remove(person1)
-#                 vehicle.current_load += person1.group_size
-#                 vehicle.position_x = person1.pickup_location_x
-#                 vehicle.position_y = person1.pickup_location_y
-#                 vehicle.current_dest_x = person1.dropoff_location_x
-#                 vehicle.current_dest_y = person1.dropoff_location_y
-#                 vehicle.next_pickup = Person.Person
-#                 vehicle.next_drop = person1
-#                 vehicle.status = "enroute_dropoff"
-#                 vehicle.curb_time_remain = Settings.curb_pick_time
-#
-#                 vehicle.pass_picked_list.append(person1.person_id)
-#                 vehicle.pickup_times.append(t)
-#                 vehicle.pass_pick_count += 1
-#
-#             # just dropped off passenger - now idle - but might already have another pickup lined-up
-#             elif vehicle.status == "enroute_dropoff":
-#                 # Case 1: No one else to pickup
-#                 if len(vehicle.pass_toPickup) == 0:
-#                     vehicle.pass_inVeh.remove(person1)
-#                     vehicle.current_load -= person1.group_size
-#                     vehicle.position_x = person1.dropoff_location_x
-#                     vehicle.position_y = person1.dropoff_location_y
-#                     vehicle.next_pickup = Person.Person
-#                     vehicle.next_drop = Person.Person
-#                     vehicle.status = "idle"
-#                     vehicle.curb_time_remain = Settings.curb_drop_time
-#                 # Case 2: Already have next passenger to pickup
-#                 else:
-#                     vehicle.pass_inVeh.remove(person1)
-#                     vehicle.current_load -= person1.group_size
-#                     vehicle.position_x = person1.dropoff_location_x
-#                     vehicle.position_y = person1.dropoff_location_y
-#                     vehicle.next_drop = Person.Person
-#                     vehicle.curb_time_remain = Settings.curb_drop_time
-#                     ####different for idleDrop##########
-#                     vehicle.next_pickup = vehicle.pass_toPickup[0]
-#                     vehicle.status = "enroute_pickup"
-#                     next_pickup_pass = vehicle.next_pickup
-#                     vehicle.current_dest_x = next_pickup_pass.pickup_location_x
-#                     vehicle.current_dest_y = next_pickup_pass.pickup_location_y
-#                     ######################################
-#
-#                 vehicle.pass_dropped_list.append(person1.person_id)
-#                 vehicle.dropoff_times.append(t)
-#                 vehicle.pass_drop_count += 1
-#                 vehicle.reassigned = 0
-#
-#             # another case unique to this opt method. enroute dropoff vehicle assigned to next passenger
-#             elif vehicle.status == "new_assign":
-#                 if vehicle.next_pickup.person_id >= 0:
-#                     vehicle.pass_toPickup.remove(vehicle.pass_toPickup[0])
-#
-#                 vehicle.pass_toPickup.append(person1)
-#                 vehicle.next_pickup = person1
-#                 vehicle.status = "enroute_dropoff"
-#
-#                 vehicle.pass_assgn_list.append(person1.person_id)
-#                 vehicle.assigned_times.append(t)
-#                 vehicle.pass_assgn_count += 1
-#
-#             # was en_route to  pickup, but have been reassigned
-#             elif vehicle.status == "reassign":
-#                 ####different#######
-#                 vehicle.pass_toPickup.remove(vehicle.pass_toPickup[0])
-#                 ######################################
-#                 vehicle.pass_toPickup.append(person1)
-#                 vehicle.current_dest_x = person1.pickup_location_x
-#                 vehicle.current_dest_y = person1.pickup_location_y
-#                 vehicle.next_pickup = person1
-#                 vehicle.status = "enroute_pickup"
-#
-#                 vehicle.pass_assgn_list.append(person1.person_id)
-#                 vehicle.assigned_times.append(t)
-#                 vehicle.pass_assgn_count += 1
-#                 vehicle.reassigned = 1
-#
-#             elif vehicle.status == "unassign":
-#                 vehicle.pass_toPickup = []
-#                 vehicle.reassigned = 0
-#
-#                 vehicle.next_pickup = Person.Person
-#
-#                 if vehicle.next_drop.person_id >= 0:
-#                     vehicle.status = "enroute_dropoff"
-#                 else:
-#                     vehicle.status = "idle"
-#                     vehicle.current_dest_x = -1.0
-#                     vehicle.current_dest_y = -1.0
-#             else:
-#                 sys.exit("Error No Proper Status - Opt Method 5")
-#
-#     return vehicle

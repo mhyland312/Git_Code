@@ -2,21 +2,24 @@ __author__ = 'Flo'
 #
 import math
 import re
-#
+
+# for demand estimations
 week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 xy_regex = re.compile(".+(\d+)x_(\d+)y.+")
+
 #
 def vectorFromTo(p1, p2):
     return (p2[0]-p1[0], p2[1]-p1[1])
-#
+
+# little rectangles classes
 class SubArea():
     def __init__(self, xi, yj, corners):
-        self.xi = xi
-        self.yj = yj
-        self.corners = corners
+        self.xi = xi  # index for subarea
+        self.yj = yj # index for subarea
+        self.corners = corners # used to calculate middle of region
         self.relocation_destination = (int((corners[2][0]-corners[0][0])/2.0), int((corners[2][1]-corners[0][1])/2.0)) 
         #
-        self.number_nonzero_forecast_entries = 0
+        self.number_nonzero_forecast_entries = 0 # just to check if in river
         self.demand_forecast = {}       # weekday -> [estimated_number_of_requests_1, estimated_number_of_requests_2, ...]
     #
     def __str__(self):
@@ -25,17 +28,20 @@ class SubArea():
     #
     def setRelocationDestination(self, point):
         self.relocation_destination = point
-    #
+
+    # lc is a row in the demand prediction file
     def setDemandPrediction(self, lc):
         weekday = lc[2]
         self.demand_forecast[weekday] = [float(x) for x in lc[4:]]
         for entry in self.demand_forecast[weekday]:
             if entry != 0:
                 self.number_nonzero_forecast_entries += 1
-    #
+
+    # not that important
     def getDemandEstimation(self, weekday, i):
         return self.demand_forecast[weekday][i]
-    #
+
+    # not that important
     def isActive(self):
         if self.number_nonzero_forecast_entries != 0:
             return True
@@ -221,6 +227,7 @@ class Area():
 #                 print(ratio_time_in_time_interval, sa_obj.getDemandEstimation(ti_weekday[last_time_index-1], last_time_index-1), demand_predictions[sa_key])
         #
         return demand_predictions
+
 # --------------------------------------------------------------------------- #
 # test of code
 if __name__ == '__main__':

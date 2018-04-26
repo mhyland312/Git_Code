@@ -8,10 +8,10 @@ import Regions
 __author__ = 'Mike'
 
 
-def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
+def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_run, taxi):
 
     ##################################################################################################
-    # Input Information - Customer Demand and AV Initial Positions
+    # Input Information - Customer Demand
     ##################################################################################################
 
     # read in information about all customers
@@ -22,7 +22,7 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
     demand_file = open(file_str, 'r')
 
     demand_reader = csv.reader(demand_file)
-    People = []
+    customers = []
     count = 0
     for i_row in demand_reader:
         count += 1
@@ -34,10 +34,12 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
             dropoff_x = float(i_row[4])
             dropoff_y = float(i_row[5])
             group_size = int(i_row[6])
-            person_status = "unassigned"
-            People.append(Person.make_person(person_id, pickup_x, pickup_y, request_time, dropoff_x, dropoff_y,
-                                             group_size, person_status))
+            customers.append(Person.make_person(person_id, pickup_x, pickup_y, request_time, dropoff_x, dropoff_y,
+                                             group_size))
 
+    ##################################################################################################
+    # Input Information - AV Initial Positions
+    ##################################################################################################
     # read in information about all AVs
     # vehFile = open('../Inputs/Vehicles_Taxi.csv', 'r')
     if taxi:
@@ -47,7 +49,7 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
 
     veh_file = open(file_str2, 'r')
     vehicle_reader = csv.reader(veh_file)
-    Vehicles = []
+    av_fleet = []
     cnt = 0
     for j_row in vehicle_reader:
         cnt += 1
@@ -57,7 +59,19 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
             start_y = float(j_row[2])
             capacity = int(j_row[3])
             veh_status = "idle"
-            Vehicles.append(Vehicle.make_vehicle(vehicle_id, start_x, start_y, capacity, veh_status))
+            av_fleet.append(Vehicle.make_vehicle(vehicle_id, start_x, start_y, capacity, veh_status))
+
+
+    ##################################################################################################
+    # Input Information - Regions/subAreas
+    ##################################################################################################
+
+    # Dandl
+    # create a list with all sub_area objects
+    # and/or create a list with all subArea-time periods
+    # it seems like you might already be reading in the files in Regions, but still need a list of all sub_area objects
+
+
 
     ##################################################################################################
     # Simulation
@@ -67,8 +81,8 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
     i_person = 0
     pass_no_assign_q = []
     pass_no_pick_q = []
-    fleet_size = len(Vehicles)
-    veh_idle_q = Vehicles[0:fleet_size]
+    fleet_size = len(av_fleet)
+    veh_idle_q = av_fleet[0:fleet_size]
     veh_pick_q = []
     veh_drop_q = []
     veh_relocate_q = []
@@ -84,19 +98,25 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
             sys.exit("something wrong with AV queues")
 
     ##################################################################################################
-    # move relocating AVs
+    # Dandl
+    # temporary code for moving relocating AVs to their new subArea
+
+        # if just dropped someone off, need to wait X seconds before relocating
         for i_veh_relocate in veh_relocate_q:
             if i_veh_relocate.curb_time_remain > 0:
                 i_veh_relocate.curb_time_remain = i_veh_relocate.curb_time_remain - 1
 
+            # else, just move AV one step toward subArea centroid
             else:
                 sub_area = i_veh_relocate.next_sub_area
                 Vehicle.move_vehicle_manhat(t, i_veh_relocate, Person.Person, sub_area)
 
-                # AV just made it to subArea relocation centroid and is idle
+                # if AV arrives at centroid location, change to idle
                 if i_veh_relocate.status == "idle":
                     veh_idle_q.append(i_veh_relocate)
                     veh_relocate_q.remove(i_veh_relocate)
+
+                    # Dandl
                     # may need to update subArea information
 
     ##################################################################################################
@@ -113,11 +133,11 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
                 if i_veh_drop.status == "idle":
                     veh_idle_q.append(i_veh_drop)
                     veh_drop_q.remove(i_veh_drop)
-                    Person.update_Person(t, person_drop, i_veh_drop)
+                    Person.update_person(t, person_drop, i_veh_drop)
 
                 # AV just dropped customer off but already has a next pickup point
                 elif i_veh_drop.status == "enroute_pickup":
-                    Person.update_Person(t, person_drop, i_veh_drop)
+                    Person.update_person(t, person_drop, i_veh_drop)
                     veh_pick_q.append(i_veh_drop)
                     veh_drop_q.remove(i_veh_drop)
 
@@ -134,7 +154,7 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
                     pass_no_pick_q.remove(person_pick)
                     veh_drop_q.append(ii_veh_pick)
                     veh_pick_q.remove(ii_veh_pick)
-                    Person.update_Person(t, person_pick, ii_veh_pick)
+                    Person.update_person(t, person_pick, ii_veh_pick)
 
     ##################################################################################################
     # update idle AVs curb wait time
@@ -144,11 +164,11 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
 
     ##################################################################################################
     # check if there are new requests
-        if i_person < len(People):
-            while People[i_person].request_time <= t:
-                pass_no_assign_q.append(People[i_person])
+        if i_person < len(customers):
+            while customers[i_person].request_time <= t:
+                pass_no_assign_q.append(customers[i_person])
                 i_person += 1
-                if i_person == len(People):
+                if i_person == len(customers):
                     break
 
     ###################################################################################################
@@ -160,6 +180,10 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
             if len(pass_no_assign_q) > 0 and len(veh_idle_q + veh_drop_q) > 0:
 
                 pass_veh_assgn = AA.assign_veh_fcfs(veh_idle_q, veh_drop_q, pass_no_assign_q, opt_method)
+
+                # Dandl
+                # Call relocation/rebalancing algorithm
+                # relocate_veh(av_fleet, sub_areas, relocate_method, t)
 
                 remaining_persons = []
                 used_vehicles = []
@@ -185,7 +209,7 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
                             pass_no_pick_q.append(i_pass)
                             temp_veh_status = "new_assign"
 
-                        Person.update_Person(t, i_pass, j_vehicle)
+                        Person.update_person(t, i_pass, j_vehicle)
                         Vehicle.update_vehicle(t, i_pass, j_vehicle, Regions.SubArea, temp_veh_status)
 
                     else:
@@ -198,6 +222,9 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
                 for i_used in used_vehicles:
                     if i_used in veh_idle_q:
                         veh_idle_q.remove(i_used)
+
+                # Dandle
+                # Need to process sub_Areas, and vehicles that are now relocating
 
     ###################################################################################################
     # Assign using Optimization-based methods
@@ -214,7 +241,7 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
 
                 for i_trav in pass_no_pick_q:
                     if i_trav.reassigned == 1:
-                        car = Vehicles[i_trav.vehicle_id]
+                        car = av_fleet[i_trav.vehicle_id]
                         pass_veh_assign1.append([i_trav, car])
                         temp_pass_no_pick_q.remove(i_trav)
                         if car in veh_idle_q:
@@ -224,26 +251,18 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
                         elif car in veh_drop_q:
                             temp_veh_drop_q.remove(car)
 
-                # # If assigned customers have already been reassigned once, do not include in assignment problem
-                # pass_veh_assign1 = []
-                # temp_veh_pick_q = veh_pick_q[0:len(veh_pick_q)]
-                # temp_pass_no_pick_q = pass_no_pick_q[0:len(pass_no_pick_q)]
-                # for j_car in veh_pick_q:
-                #     if j_car.next_pickup.reassigned == 1:
-                #         pass_veh_assign1.append([j_car.next_pickup, j_car])
-                #         temp_veh_pick_q.remove(j_car)
-                #         temp_pass_no_pick_q.remove(j_car.next_pickup)
-
                 # call assignment algorithm
                 pass_veh_assign2 = AA.assign_veh_opt(temp_veh_idle_q, temp_veh_pick_q, temp_veh_drop_q,
                                                      pass_no_assign_q, temp_pass_no_pick_q, opt_method, t)
                 pass_veh_assgn = pass_veh_assign2 + pass_veh_assign1
 
+                # Dandl
+                # Call relocation/rebalancing algorithm
+                # relocate_veh(av_fleet, sub_areas, relocate_method, t)
+
                 remaining_persons = []
                 check_used_vehicles = used_vehicles[0:len(used_vehicles)]  # used_vehicles + reassign_veh
-                used_vehicles = []
                 used_vehicles = list(jj_car for [ii_person, jj_car] in pass_veh_assign1)
-                old_veh_pick_q = veh_pick_q[0:len(veh_pick_q)]
 
                 for [i_pass, j_vehicle] in pass_veh_assgn:
                     temp_veh_status = "base_assign"
@@ -280,7 +299,7 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
                         elif j_vehicle in veh_drop_q:
                             temp_veh_status = "new_assign"
 
-                        Person.update_Person(t, i_pass, j_vehicle)
+                        Person.update_person(t, i_pass, j_vehicle)
                         Vehicle.update_vehicle(t, i_pass, j_vehicle, Regions.SubArea, temp_veh_status)
 
                     else:
@@ -294,16 +313,7 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
                     if i_used in veh_idle_q:
                         veh_idle_q.remove(i_used)
 
-                # AV was going to pick up customer, now it is not
-                # if opt_method == "match_idlePick":
-                #     for ijk_veh in old_veh_pick_q:
-                #         if ijk_veh not in used_vehicles:
-                #             temp_veh_status = "unassign"
-                #             Vehicle.update_vehicle(t, Person.Person, ijk_veh, Regions.SubArea, temp_veh_status)
-                #             veh_pick_q.remove(ijk_veh)
-                #             veh_idle_q.append(ijk_veh)
-
-                if "Pick" in opt_method:#opt_method == "match_idlePickDrop":
+                if "Pick" in opt_method:
                     for abc_veh in check_used_vehicles:
                         if abc_veh not in used_vehicles:  # and abc_veh not in reassgn_veh_pick_Q:
                             temp_veh_status = "unassign"
@@ -314,6 +324,9 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
                             # i think it is possible that we should also check veh_drop_q
                             elif abc_veh in veh_drop_q:
                                 abc_veh.next_pickup = Person.Person
+
+                # Dandle
+                # Need to process sub_Areas, and vehicles that are now relocating
 
     ##################################################################################################
     # Simulation Over
@@ -326,17 +339,17 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
     # Customer Metrics ###############
 
     # Incomplete Customers Metrics
-    num_served = (list(p.status for p in People)).count("served")
-    num_in_veh = (list(p.status for p in People)).count("inVeh")
-    num_assgnd = (list(p.status for p in People)).count("assigned")
-    num_unassgnd = (list(p.status for p in People)).count("unassigned")
+    num_served = (list(p.status for p in customers)).count("served")
+    num_in_veh = (list(p.status for p in customers)).count("inVeh")
+    num_assgnd = (list(p.status for p in customers)).count("assigned")
+    num_unassgnd = (list(p.status for p in customers)).count("unassigned")
     print("num_served", num_served)
 
     # Quality of Service Metrics
     # remove edge effects, only count middle 80% <-- previously 60%
-    start = round(0.1*len(People))
-    end = round(0.8*len(People))
-    metric__people = People[start:end]
+    start = round(0.1*len(customers))
+    end = round(0.8*len(customers))
+    metric__people = customers[start:end]
     # num_metric_people = len(metric__people)
 
     # perc__rideshare = round(numpy.mean(list(p.rideshare for p in metric__people if p.status == "served")),2)
@@ -356,11 +369,11 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
 
     # AV Metrics ###############
 
-    tot_fleet_miles = int(sum(list(v.total_distance for v in Vehicles))/5280.0)
-    mean_tot_veh_dist = round(numpy.mean(list(v.total_distance for v in Vehicles))/5280.0, 2)
+    tot_fleet_miles = int(sum(list(v.total_distance for v in av_fleet))/5280.0)
+    mean_tot_veh_dist = round(numpy.mean(list(v.total_distance for v in av_fleet))/5280.0, 2)
     # sd_tot_veh_dist = round(numpy.std(list(v.total_distance for v in Vehicles))/5280.0,2)
 
-    empty_fleet_miles = int(sum(list(v.empty_distance for v in Vehicles))/5280.0)
+    empty_fleet_miles = int(sum(list(v.empty_distance for v in av_fleet))/5280.0)
     # mean_empty_veh_dist= round(numpy.mean(list(v.empty_distance for v in Vehicles))/5280.0,2)
     # sd_empty_veh_dist = round(numpy.std(list(v.empty_distance for v in Vehicles))/5280.0,2)
 
@@ -398,7 +411,7 @@ def main(hold_for, t_max, time_step, opt_method, veh_speed, i_run, taxi):
     # traveler_writer.writerow(["person_id", "base_ivtt", "simulate_ivtt", "wait_assgn_time","wait_pick_time",
     #                           "vehicle", "old_veh"]) #, "rideshare"])
     #
-    # for j_person in People[start:end]:
+    # for j_person in customers[start:end]:
     #     base_ivtt = j_person.in_veh_dist/veh_speed
     #     traveler_writer.writerow([j_person.person_id, base_ivtt, j_person.travel_time, j_person.wait_assgn_time,
     #                               j_person.wait_pick_time, j_person.vehicle_id, j_person.old_vehicles])

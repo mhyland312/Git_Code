@@ -43,6 +43,22 @@ def assign_veh_opt(veh_idle_q, veh_pick_q, veh_drop_q, pass_no_assign_q, pass_no
 #############################################################################################################
 
 
+# Dandl
+# This just checks what relocating method we are using, and then sends information to specific relocation algorithm
+#############################################################################################################
+def relocate_veh(av_fleet, sub_areas, relocate_method, t):
+    answer = "blank"
+    if relocate_method == "Dandl":
+        answer = relocate_dandl(av_fleet, sub_areas, t)   # <-- this function is at bottom of file
+    elif relocate_method == "Hyland":
+        answer = relocate_hyland(av_fleet, sub_areas, t)
+    else:
+        print("Error: No_assignment_method")
+    return answer
+#############################################################################################################
+
+
+
 #############################################################################################################
 def fcfs_longest_idle(veh_idle_q, pass_no_assign_q):
     len_veh = len(veh_idle_q)
@@ -611,3 +627,13 @@ def idlePickDrop_minDist(veh_idle_q, veh_pick_q, veh_drop_q, pass_no_assign_q, p
 
 
 
+# Dandl
+# Code relocation algorithm in this function
+# Input: complete information about all vehicles and all sub_areas, as well as the current time
+# Output: I can basically work with anything, but possibly, a list of AVs to relocate, and their relocating subAreas
+#############################################################################################################
+def relocate_dandl(av_fleet, sub_areas, t):
+
+    return
+
+#############################################################################################################
