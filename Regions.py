@@ -2,6 +2,7 @@ __author__ = 'Flo'
 #
 import math
 import re
+import Settings as Set
 
 # for demand estimations
 week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -17,7 +18,7 @@ class SubArea():
         self.xi = xi  # index for subarea
         self.yj = yj # index for subarea
         self.corners = corners # used to calculate middle of region
-        self.relocation_destination = (int((corners[2][0]-corners[0][0])/2.0), int((corners[2][1]-corners[0][1])/2.0)) 
+        self.relocation_destination = (int((corners[2][0]-corners[0][0])/2.0), int((corners[2][1]-corners[0][1])/2.0))
         #
         self.number_nonzero_forecast_entries = 0 # just to check if in river
         self.demand_forecast = {}       # weekday -> [estimated_number_of_requests_1, estimated_number_of_requests_2, ...]
@@ -39,7 +40,14 @@ class SubArea():
 
     # not that important
     def getDemandEstimation(self, weekday, i):
-        return self.demand_forecast[weekday][i]
+        # test if weekday exists
+        # use weekday-1 if not (only forecast for 1 day avaliable)
+        if self.demand_forecast.get(weekday):
+            return self.demand_forecast[weekday][i]
+        else:
+            weekday_index = week.index(weekday)
+            day_before_weekday = week[weekday_index-1]  # also works for weekday_index = 0!
+            return self.demand_forecast[day_before_weekday][i]
 
     # not that important
     def isActive(self):
@@ -53,7 +61,7 @@ class Area():
         self.region_csv_file = region_csv_file
         self.prediction_csv_file = prediction_csv_file
         # check if files are fitting together
-        m_region = xy_regex.search(self.region_csv_file) 
+        m_region = xy_regex.search(self.region_csv_file)
         m_pred = xy_regex.search(self.prediction_csv_file)
         if not m_region or not m_pred or m_region.groups()!=m_pred.groups():
             print("---------------------------------------------------")
@@ -156,22 +164,26 @@ class Area():
 #         print("yj {0}".format(yj))
         return self.sub_areas.get((xi, yj))
     #
-    def getVehicleAvailabilitiesPerArea(self, list_vehicle_availabilities):
-        # input: vehicles that will be available before end of relocation_time_horizon 
-        # [(future_position_x, future_position_y)_1, (future_position_x, future_position_y)_2, ...]
-        #
-        av_veh_count = {}       # (xi, yj) -> count
+    def getVehicleAvailabilitiesPerArea(self, av_fleet):
+        # input: list of vehicles
+        # output: dictionary with subArea key -> list of (veh_id, av_time)
+        veh_availabilities = {}       # (xi, yj) -> [(veh_id, av_time)_1, (veh_id, av_time)_2, ...]
         for sa_key in self.sub_areas.keys():
-            av_veh_count[sa_key] = 0
-        for p in list_vehicle_availabilities:
-            sa_obj = self.findSubAreaOfPoint(p)
+            veh_availabilities[sa_key] = []
+        #
+        count_veh = -1
+        for j_veh in av_fleet:
+            count_veh += 1
+            (av_x, av_y, av_dist) = get_next_availability(j_veh)
+            av_time = av_dist/Set.veh_speed
+            sa_obj = self.findSubAreaOfPoint((av_x, av_y))
             if sa_obj:
                 xi = sa_obj.xi
                 yj = sa_obj.yj
-                av_veh_count[(xi, yj)] += 1
+                veh_availabilities[(xi, yj)].append((count_veh, av_time))
             else:
                 print("Vehicle location {0} is out of bounds! It will not be counted to any subarea.".format(p))
-        return av_veh_count
+        return veh_availabilities
     #
     def getDemandPredictionsPerArea(self, weekday, time, relocation_time_horizon):
         # input:

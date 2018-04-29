@@ -3,12 +3,28 @@ import Vehicle
 import Person
 import Assignment_Algorithm as AA
 import numpy
+import datetime
 import sys
 import Regions
 __author__ = 'Mike'
 
 
-def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_run, taxi):
+# Dandl
+# Comment FD:
+# I had to add two input parameters
+# Since my relocation algorithm will probably have 2 parameters, I might need to add even more.
+def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_run, taxi, xyt_string, false_forecast_f=None):
+
+    # Dandl
+    # Comment FD:
+    # this part assumes 'i_run' is given in iso format, e.g. 2016-04-01
+    # this is necessary to use the correct forecasts
+    (sim_year, sim_month, sim_day) = [int(x) for x in i_run.split("-")]
+    week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    date = datetime.datetime(sim_year, sim_month, sim_day)
+    dayNumber = date.weekday()
+    weekday = week[dayNumber]
+
 
     ##################################################################################################
     # Input Information - Customer Demand
@@ -64,10 +80,32 @@ def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_r
     ##################################################################################################
 
     # Dandl
+    ############
     # create a list with all sub_area objects
     # and/or create a list with all subArea-time periods
     # it seems like you might already be reading in the files in Regions, but still need a list of all sub_area objects
-
+    ############
+    # Comment FD: the idea is that the main area class does all the work and returns dictionaries for
+    # 1) demand forecast
+    # 2) vehicle availability
+    # with the subarea_key as key of the respective dictionary and the respective quantity as value
+    # the respective destination centers can be called by
+    # area.sub_areas[subarea_key].relocation_destination
+    #
+    # read information of area depending on
+    # a) xyt_string
+    # b) false_forecast_f [optional, if not given, the real forecast value will be read]
+    # format of xyt_string: 2x_8y_5min
+    # format of xy_string: 2x_8y
+    xy_string = "_".join(xyt_string.split("_")[:2])
+    prediction_csv_file = "prediction_areas_{0}.csv".format(xy_string)
+    # region_csv_file = "prediction_areas_{0}.csv".format(xy_string)
+    if false_forecast_f:
+        region_csv_file = false_forecast_f
+    else:
+        region_csv_file = "manhattan_trip_patterns_{0}_only_predictions.csv".format(xyt_string)
+    relocation_destination_f = "demand_center_points_{0}.csv".format(xy_string)
+    area = Regions.Area(region_csv_file, prediction_csv_file, relocation_destination_f)
 
     ##################################################################################################
     # Simulation
@@ -93,6 +131,13 @@ def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_r
                 sub_area = j_av.next_sub_area
                 Vehicle.move_vehicle_manhat(t, j_av, Person.Person, sub_area)
                 # if AV arrives at centroid location, change to idle
+
+                # Dandl
+                # may need to update subArea information
+                # comment FD: my idea would be to update all subArea information in the
+                # decision time steps only
+                # it should not matter if a vehicle that is idle served a customer or
+                # was relocating
 
             ##################################################################################################
             # move en_route drop-off AVs
@@ -136,12 +181,42 @@ def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_r
             if count_unassigned > 0 and count_avail_veh > 0:
                 AA.assign_veh_fcfs(av_fleet, customers, opt_method, t)
 
+        # Dandl
+        # Call relocation/rebalancing algorithm
+        # Comment FD: give reference to area object instead of sub_areas to relocation algorithm
+        # -> this allows use of area.getVehicleAvailabilitiesPerArea() and
+        #                       area.getDemandPredictionsPerArea()
+        # forecast needs to know which weekday it is
+        veh_subarea_assgn = relocate_veh(av_fleet, area, relocate_method, t, weekday)
+
+        # Dandl
+        # Need to process sub_Areas, and vehicles that are now relocating
+        # Comment FD: veh_subarea_assgn is list of (vehicle_obj, subArea_obj) tuples
+        for [j_vehicle, l_subarea] in veh_subarea_assgn:
+            temp_veh_status = "relocating"
+            Vehicle.update_vehicle(t, Person.Person, j_vehicle, l_subarea, temp_veh_status)
+
     ###################################################################################################
     # Assign using Optimization-based methods
         else:
             # Every X seconds assign customers in the waiting queue to an AV
             if t % hold_for == 0 and count_unassigned > 0 and count_avail_veh > 0:
                 AA.assign_veh_opt(av_fleet, customers, opt_method, t)
+
+        # Dandl
+        # Call relocation/rebalancing algorithm
+        # Comment FD: give reference to area object instead of sub_areas to relocation algorithm
+        # -> this allows use of area.getVehicleAvailabilitiesPerArea() and
+        #                       area.getDemandPredictionsPerArea()
+        # forecast needs to know which weekday it is
+        veh_subarea_assgn = relocate_veh(av_fleet, area, relocate_method, t, weekday)
+
+        # Dandl
+        # Need to process sub_Areas, and vehicles that are now relocating
+        # Comment FD: veh_subarea_assgn is list of (vehicle_id, subArea-reference) tuples
+        for [j_vehicle, l_subarea] in veh_subarea_assgn:
+            temp_veh_status = "relocate"
+            Vehicle.update_vehicle(t, Person.Person, j_vehicle, l_subarea, temp_veh_status)
 
     ###################################################################################################
     # Assign AVs to customer requests

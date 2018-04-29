@@ -196,6 +196,7 @@ def get_next_availability(vehicle):
     # elif vehicle.status == "relocating":
     #     Dandl -   I do not think we need to add this:
     #               The relocating AV is currently 'available'
+    # comment FD: I have the same opinion
 
     return last_x, last_y, total_rem_dist
 
@@ -362,6 +363,7 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
 
     # Option 6 - AV was assigned to relocate/reposition to a different subArea
     # Dandl - check to make sure this makes sense
+    # comment FD: looks correct
     elif temp_veh_status == "relocate":
 
         # dynamic information

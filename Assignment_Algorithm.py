@@ -48,6 +48,26 @@ def assign_veh_opt(av_fleet, customers, opt_method, t):
 
 # Dandl
 # This just checks what relocating method we are using, and then sends information to specific relocation algorithm
+# comment FD:
+# 1) i advise to give the whole area class as input parameter
+# 2) the forecast will need to know which weekday it is
+# 3) might be necessary to pass more parameters for my algorithm:
+# - length of time horizon
+# - minimal imbalance
+#############################################################################################################
+def relocate_veh(av_fleet, area, relocate_method, t, weekday):
+    answer = "blank"
+    if relocate_method == "Dandl":
+        answer = relocate_dandl(av_fleet, sub_areas, t, weekday)   # <-- this function is at bottom of file
+    elif relocate_method == "Hyland":
+        answer = relocate_hyland(av_fleet, sub_areas, t, weekday)
+    else:
+        print("Error: No_assignment_method")
+    return answer
+#############################################################################################################
+
+
+
 #############################################################################################################
 def relocate_veh(av_fleet, sub_areas, relocate_method, t):
     answer = "blank"
@@ -96,7 +116,7 @@ def fcfs_nearest_idle(av_fleet, customers, t):
         veh_index = -1
         for j_av in idle_avs:
             veh_index += 1
-            dist = Distance.dist_manhat(i_cust, j_av)
+            dist = Distance.dist_manhat_pick(i_cust, j_av)
             # make sure that two persons aren't assigned to same vehicle
             if dist < min_dist and not (j_av.vehicle_id in used_vehicles):
                 win_veh_index = veh_index
@@ -125,7 +145,7 @@ def fcfs_smart_nn(av_fleet, customers, t):
             win_vehicle = Vehicle.Vehicle
             min_dist = Set.inf
             for j_av in idle_avs:
-                dist = Distance.dist_manhat(i_cust, j_av)
+                dist = Distance.dist_manhat_pick(i_cust, j_av)
                 # make sure that two persons aren't assigned to same vehicle
                 if dist < min_dist and j_av not in used_vehicles:
                     win_vehicle = j_av
@@ -142,7 +162,7 @@ def fcfs_smart_nn(av_fleet, customers, t):
             min_dist = Set.inf
             win_cust = Person.Person
             for i_cust in unassign_cust:
-                dist = Distance.dist_manhat(i_cust, j_av)
+                dist = Distance.dist_manhat_pick(i_cust, j_av)
                 if dist < min_dist and i_cust not in win_cust_list:
                     win_cust = i_cust
                     min_dist = dist
@@ -174,9 +194,9 @@ def fcfs_drop_smart_nn(av_fleet, customers, t):
             win_av = Vehicle.Vehicle
             for j_av in idle_n_drop_avs:
                 if j_av.status == "enroute_dropoff":
-                    dist = Distance.dyn_dist_manhat(i_cust, j_av)
+                    dist = Distance.dist_manhat_drop_pick(i_cust, j_av)
                 else:
-                    dist = Distance.dist_manhat(i_cust, j_av)
+                    dist = Distance.dist_manhat_pick(i_cust, j_av)
                 # make sure that two persons aren't assigned to same vehicle
                 if dist < min_dist and j_av not in used_vehicles:
                     win_av = j_av
@@ -200,9 +220,9 @@ def fcfs_drop_smart_nn(av_fleet, customers, t):
             win_cust = Person.Person
             for i_cust in unassign_cust:
                 if j_av.status == "enroute_dropoff":
-                    dist = Distance.dyn_dist_manhat(i_cust, j_av)
+                    dist = Distance.dist_manhat_drop_pick(i_cust, j_av)
                 else:
-                    dist = Distance.dist_manhat(i_cust, j_av)
+                    dist = Distance.dist_manhat_pick(i_cust, j_av)
 
                 if dist < min_dist and i_cust not in win_cust_list:
                     win_cust = i_cust
@@ -243,9 +263,9 @@ def fcfs_drop_smart_nn2(av_fleet, customers, t):
             win_av = Vehicle.Vehicle
             for j_av in idle_n_drop_avs:
                 if j_av.status == "enroute_dropoff":
-                    dist = Distance.dyn_dist_manhat(i_cust, j_av)
+                    dist = Distance.dist_manhat_drop_pick(i_cust, j_av)
                 else:
-                    dist = Distance.dist_manhat(i_cust, j_av)
+                    dist = Distance.dist_manhat_pick(i_cust, j_av)
                 # make sure that two persons aren't assigned to same vehicle
                 if dist < min_dist and j_av not in used_vehicles:
                     win_av = j_av
@@ -269,9 +289,9 @@ def fcfs_drop_smart_nn2(av_fleet, customers, t):
             win_cust = Person.Person
             for i_cust in unassign_cust:
                 if j_av.status == "enroute_dropoff":
-                    dist = Distance.dyn_dist_manhat(i_cust, j_av)
+                    dist = Distance.dist_manhat_drop_pick(i_cust, j_av)
                 else:
-                    dist = Distance.dist_manhat(i_cust, j_av)
+                    dist = Distance.dist_manhat_pick(i_cust, j_av)
 
                 if dist < min_dist and i_cust not in win_cust_list:
                     win_cust = i_cust
@@ -313,7 +333,7 @@ def opt_idle(av_fleet, customers, t):
         for j_veh in idle_avs:
             count_veh += 1
             av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
-            dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - \
+            dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - \
                                                 elapsed_wait_penalty + av_curb_wait
 
     t1 = time.time()
@@ -403,10 +423,10 @@ def opt_idle_pick(av_fleet, customers, t):
 
                 if j_veh.status == "idle":
                     av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
-                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + av_curb_wait
                 elif j_veh.status == "enroute_pickup":
-                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + Set.reassign_penalty
                 else:
                     sys.exit("Something wrong with AV state - idlePick_minDist")
@@ -416,16 +436,16 @@ def opt_idle_pick(av_fleet, customers, t):
 
                 if j_veh.next_pickup == i_pass:
                     if j_veh.status == "enroute_pickup":
-                        dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty
+                        dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty
                     else:
                         sys.exit("Something wrong with current AV-customer match - idlePick_minDist")
 
                 elif j_veh.status == "idle":
                     av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
-                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + Set.reassign_penalty + av_curb_wait
                 elif j_veh.status == "enroute_pickup":
-                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + 2*Set.reassign_penalty
                 else:
                     sys.exit("Something wrong with AV state - idlePick_minDist")
@@ -530,11 +550,11 @@ def opt_idle_drop(av_fleet, customers, t):
             # if vehicle state is enroute_dropoff - need to include dropoff distance as well
             if count_veh >= len_idle_avs:
                 av_curb_wait = Set.curb_drop_time * Set.veh_speed
-                dist_assgn[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                dist_assgn[count_pass][count_veh] = Distance.dist_manhat_drop_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                + Set.dropoff_penalty + av_curb_wait
             else:
                 av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
-                dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty + av_curb_wait
+                dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty + av_curb_wait
 
     t1 = time.time()
     # Model
@@ -614,11 +634,11 @@ def opt_idle_drop2(av_fleet, customers, t):
             # if vehicle state is enroute_dropoff - need to include dropoff distance as well
             if count_veh >= len_idle_avs:
                 av_curb_wait = Set.curb_drop_time * Set.veh_speed
-                dist_assgn[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                dist_assgn[count_pass][count_veh] = Distance.dist_manhat_drop_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                + Set.dropoff_penalty + av_curb_wait
             else:
                 av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
-                dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty + av_curb_wait
+                dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty + av_curb_wait
 
     t1 = time.time()
     # Model
@@ -717,14 +737,14 @@ def opt_idle_pick_drop(av_fleet, customers, t):
 
                 if j_veh.status == "idle":
                     av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
-                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + av_curb_wait
                 elif j_veh.status == "enroute_dropoff":
                     av_curb_wait = Set.curb_drop_time * Set.veh_speed
-                    dist_assgn[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat_drop_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + Set.dropoff_penalty + av_curb_wait
                 elif j_veh.status == "enroute_pickup":
-                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + Set.reassign_penalty
                 else:
                     sys.exit("Something wrong with AV state - idlePickDrop_minDist")
@@ -734,24 +754,24 @@ def opt_idle_pick_drop(av_fleet, customers, t):
 
                 if j_veh.next_pickup == i_pass:
                     if j_veh.status == "enroute_pickup":
-                        dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty
+                        dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty
                     elif j_veh.status == "enroute_dropoff":
                         av_curb_wait = Set.curb_drop_time * Set.veh_speed
-                        dist_assgn[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                        dist_assgn[count_pass][count_veh] = Distance.dist_manhat_drop_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + Set.dropoff_penalty + av_curb_wait
                     else:
                         sys.exit("Something wrong with current AV-customer match - idlePickDrop_minDist")
 
                 elif j_veh.status == "idle":
                     av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
-                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + Set.reassign_penalty + av_curb_wait
                 elif j_veh.status == "enroute_dropoff":
                     av_curb_wait = Set.curb_drop_time * Set.veh_speed
-                    dist_assgn[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat_drop_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + Set.dropoff_penalty + Set.reassign_penalty + av_curb_wait
                 elif j_veh.status == "enroute_pickup":
-                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + 2*Set.reassign_penalty
                 else:
                     sys.exit("Something wrong with AV state - idlePickDrop_minDist")
@@ -828,13 +848,131 @@ def opt_idle_pick_drop(av_fleet, customers, t):
 #############################################################################################################
 
 
+
 # Dandl
 # Code relocation algorithm in this function
 # Input: complete information about all vehicles and all sub_areas, as well as the current time
 # Output: I can basically work with anything, but possibly, a list of AVs to relocate, and their relocating subAreas
+#
+# Comment FD:
+# changed input sub_areas to the whole area class
+# it might be necessary to add two more parameters -> it might be interesting to see how they influence results
+time_horizon = 30*60                            # rolling horizon in seconds
+min_imbalance = 3                               # below this imbalance, operator should not act
+penalty_remaining_imbalance = time_horizon/2    # penalty for remaining single imbalance unit of a subArea
 #############################################################################################################
-def relocate_dandl(av_fleet, sub_areas, t):
+def relocate_dandl(av_fleet, area, t, weekday, time_horizon, min_imbalance):
+    # approach:
+    # ---------
+    # 1) create vehicle availability list
+    # 2) loop over subAreas:
+    #    + read demand forecast
+    #    + count availability until 't + time_horizon'
+    #    + compute imbalance = forecast - availability count
+    #    + if imbalance <= -1 * min_imbalance:
+    #        -> create list of currently available vehicles for relocations
+    #    + elif imbalance >= min_imbalance:
+    #        -> create single vehicle deficiencies according to number of deficiencies per subArea:
+    #            1st: penalty factor 1 | 2nd: penalty factor 2 | 3rd: penalty factor 3 | ...
+    #            idea: it is more important to decrease large imbalances than to have many short
+    #                  trips between nearby areas with small imbalances
+    # 3) compute distance matrix between currently available vehicles and single vehicle deficiencies
+    #        (only one computation per subArea) and "remove" combination if v*distance > time_horizon
+    #        by artificially increasing the costs
+    # 4) create and solve optimization problem
+    #
+    # either deficiency in an area is assigned to a vehicle or a penalty term is added to
+    # total objective function
+    # min_{x_lj} sum_l (P_l chi_l + sum_j co_lj xo_lj)
+    # s.t. chi_l + sum_j xo_lj = 1
+    #      sum_l xo_lj <= 1
+    #
+    # -> define chi_l as additional variables with c_lj = P_l for l=len(veh) + j
+    # min_{x_lj} sum_{l,j} c_lj x_lj
+    # s.t. sum_j x_lj = 1
+    #      sum_l x_lj <= 1
+    #
+    # 5) output in following format: list of [(j_veh, l_sub_area), ...]
+    #
+    # 1)
+    # veh_av_dict = {}          # subArea -> list of (veh_counter, av_time)
+    veh_av_dict = area.getVehicleAvailabilitiesPerArea(av_fleet)
+    # 2)
+    veh_av_for_relocation = []  # list of veh_obj
+    sub_area_deficiency = []    # list of (subArea_obj, penalty_factor)
+    all_def_id = 0
+    for sa_key, c_subArea in area.sub_areas.items():
+        fc_val = c_subArea.getDemandPredictionsPerArea(weekday, t, time_horizon)
+        av_veh_info_list = veh_av_dict[sa_key]
+        imbalance = fc_val - av_veh_val
+        if imbalance <= -1* min_imbalance:
+            region_idle_counter = 0
+            for entry in av_veh_info_list:
+                (veh_counter, av_time) = entry
+                if av_time == t and region_idle_counter <= -1*imbalance:
+                    veh_av_for_relocation.append(av_fleet[veh_counter])
+                    region_idle_counter += 1
+        elif imbalance >= min_imbalance:
+            region_penalty_factor = 1
+            for i in range(imbalance):
+                sub_area_deficiency.append((c_subArea, region_penalty_factor))
+                all_def_id += 1
+                region_penalty_factor += 1
+    len_sd = len(sub_area_deficiency)
+    len_veh = len(veh_av_for_relocation)
+    # 3)
+    # timeDistM = [[0 for j in range(len(veh_av_for_relocation))] for l in range(len(sorted_deficiencies))] add eye matrix for penalty terms
+    timeDistM = [[0 for j in range(len(veh_av_for_relocation)+len(sorted_deficiencies))] for l in range(len(sorted_deficiencies))]
+    count_sad = -1
+    for entry in sub_area_deficiency:
+        count_sad += 1
+        (c_subArea, region_penalty_factor) = entry
+        count_veh = -1
+        for j_veh in veh_av_for_relocation:
+            count_veh += 1
+#               dist_veh_subArea = Distance.dist_manhat_region(j_veh, c_subArea) - trav_wait_penalty \
+#                                            + j_veh.curb_time_remain * Set.veh_speed
+            dist_veh_subArea = Distance.dist_manhat_region(j_veh, c_subArea)
+            # Comment FD: correct units of following line?
+            time_veh_subArea = 1.0 * dist_veh_subArea / Set.veh_speed
+            if time_veh_subArea < time_horizon:
+                timeDistM[count_sad][count_veh] = time_veh_subArea
+            else:
+                timeDistM[count_sad][count_veh] = 1000 * time_veh_subArea # any large factor will do
+        # penalty term
+        timeDistM[count_sad][len(veh_av_for_relocation) + count_sad] = region_penalty_factor
+    # 4)
+    t1 = time.time()
+    # Model
+    models = gurobipy.Model("relocate_dandl")
+    models.setParam( 'OutputFlag', False )
 
-    return
+    # Decision Variables
+    for l in range(len_sd):
+        for j in range(len_veh):
+            x[l][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj = distM[l][j], name = 'x_%s_%s' % (l,j))
+    models.update()
 
+    # constraints
+    # deficiency either assigned to vehicle or to penalty term
+    for ll in range(len_sd):
+        models.addConstr(gurobipy.quicksum(x[ll][j] for j in range(len_veh + len_sd)) == 1)
+    # vehicle possibly assigned
+    for jj in range(len_veh):
+        models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_sd)) <= 1)
+
+
+    models.optimize()
+
+    # 5)
+    if models.status == gurobipy.GRB.Status.OPTIMAL:
+        for m_sd in range(len_sd):
+            for n_veh in range(len_veh):
+                if x[m_sd][n_veh].X == 1:
+                    pass_veh_assign[m_pass] = [veh_av_for_relocation[n_veh], sub_area_deficiency[m_sd][0]]
+                    break
+    else:
+        sys.exit("No Optimal Solution - idleOnly_minDist")
+    # print("Vehicles= ", len_veh, "  Passengers= ", len_pass, "  time=", time.time() - t1)
+    return pass_veh_assign
 #############################################################################################################
