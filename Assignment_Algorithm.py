@@ -2,44 +2,47 @@ import Distance
 import gurobipy
 import Settings as Set
 import Vehicle
+import Regions
+import Person
 import sys
 import time
 
 __author__ = 'Mike'
 
+
 #############################################################################################################
-def assign_veh_fcfs(veh_idle_q, veh_drop_q, pass_no_assign_q, opt_method):
-    answer = "blank"
+def assign_veh_fcfs(av_fleet, customers, opt_method, t):
     if opt_method == "1_FCFS_longestIdle":
-        answer = fcfs_longest_idle(veh_idle_q, pass_no_assign_q)
+        fcfs_longest_idle(av_fleet, customers, t)
     elif opt_method == "2_FCFS_nearestIdle":
-        answer = fcfs_nearest_idle(veh_idle_q, pass_no_assign_q)
+        fcfs_nearest_idle(av_fleet, customers, t)
     elif opt_method == "3_FCFS_smartNN":
-        answer = FCFS_smartNN(veh_idle_q, pass_no_assign_q)
+        fcfs_smart_nn(av_fleet, customers, t)
     elif opt_method == "4_FCFS_drop_smartNN":
-        answer = FCFS_drop_smartNN(veh_idle_q, veh_drop_q, pass_no_assign_q)
+        fcfs_drop_smart_nn(av_fleet, customers, t)
     elif opt_method == "4a_FCFS_drop_smartNN2":
-        answer = FCFS_drop_smartNN(veh_idle_q, veh_drop_q, pass_no_assign_q)
+        fcfs_drop_smart_nn2(av_fleet, customers, t)
     else:
         print("Error: No_FCFS_assignment_method")
-    return answer
+    return
 #############################################################################################################
 
 
 #############################################################################################################
-def assign_veh_opt(veh_idle_q, veh_pick_q, veh_drop_q, pass_no_assign_q, pass_no_pick_q, opt_method, t):
-    answer = "blank"
+def assign_veh_opt(av_fleet, customers, opt_method, t):
     if opt_method == "5_match_idleOnly":
-        answer = idleOnly_minDist(veh_idle_q, pass_no_assign_q, t)
+        opt_idle(av_fleet, customers, t)
     elif opt_method == "6_match_idlePick":
-        answer = idlePick_minDist(veh_idle_q, veh_pick_q, pass_no_assign_q, pass_no_pick_q, t)
+        opt_idle_pick(av_fleet, customers, t)
     elif opt_method == "7_match_idleDrop":
-        answer = idleDrop_minDist(veh_idle_q, veh_drop_q, pass_no_assign_q, pass_no_pick_q, t)
+        opt_idle_drop(av_fleet, customers, t)
+    elif opt_method == "7_match_idleDrop2":
+        opt_idle_drop2(av_fleet, customers, t)
     elif opt_method == "8_match_idlePickDrop":
-        answer = idlePickDrop_minDist(veh_idle_q, veh_pick_q, veh_drop_q, pass_no_assign_q, pass_no_pick_q, t)
+        opt_idle_pick_drop(av_fleet, customers, t)
     else:
         print("Error: No_assignment_method")
-    return answer
+    return
 #############################################################################################################
 
 
@@ -58,525 +61,702 @@ def relocate_veh(av_fleet, sub_areas, relocate_method, t):
 #############################################################################################################
 
 
+#############################################################################################################
+def fcfs_longest_idle(av_fleet, customers, t):
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    len_avs = len(idle_avs)
+    unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
+    len_custs = len(unassign_cust)
+
+    most_match_count = min(len_custs, len_avs)
+    for z_match in range(most_match_count):
+        min_request_time = min(list(i.request_time for i in unassign_cust))
+        max_wait_cust = list(i for i in unassign_cust if i.request_time == min_request_time)[0]
+        min_last_drop_time = min(list(j.last_drop_time for j in idle_avs))
+        long_wait_av = list(j for j in idle_avs if j.last_drop_time == min_last_drop_time)[0]
+
+        temp_veh_status = "base_assign"
+        Vehicle.update_vehicle(t, max_wait_cust, long_wait_av, Regions.SubArea, temp_veh_status)
+        Person.update_person(t, max_wait_cust, long_wait_av)
+    return
+#############################################################################################################
+
 
 #############################################################################################################
-def fcfs_longest_idle(veh_idle_q, pass_no_assign_q):
-    len_veh = len(veh_idle_q)
-    len_pass = len(pass_no_assign_q)
-    pass_veh_assign = [[pass_no_assign_q[n], Vehicle.Vehicle] for n in range(len_pass)]
-
-    max_match = min(len_pass, len_veh)
-    for i_match in range(max_match):
-        pass_veh_assign[i_match] = [pass_no_assign_q[i_match], veh_idle_q[i_match]]
-
-    return pass_veh_assign
-#############################################################################################################
-
-
-#############################################################################################################
-def fcfs_nearest_idle(veh_idle_q, pass_no_assign_q):
-    len_pass = len(pass_no_assign_q)
-    pass_veh_assign = [[pass_no_assign_q[n], Vehicle.Vehicle] for n in range(len_pass)]
+def fcfs_nearest_idle(av_fleet, customers, t):
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
 
     used_vehicles = []
     count_p = -1
-    for i_person in pass_no_assign_q:
+    for i_cust in unassign_cust:
         count_p += 1
         min_dist = Set.inf
         win_veh_index = -1
         veh_index = -1
-        for j_veh in veh_idle_q:
+        for j_av in idle_avs:
             veh_index += 1
-            dist = Distance.dist_manhat(i_person, j_veh)
+            dist = Distance.dist_manhat(i_cust, j_av)
             # make sure that two persons aren't assigned to same vehicle
-            if dist < min_dist and not (j_veh.vehicle_id in used_vehicles):
+            if dist < min_dist and not (j_av.vehicle_id in used_vehicles):
                 win_veh_index = veh_index
                 min_dist = dist
         if win_veh_index >= 0:
-            win_vehicle = veh_idle_q[win_veh_index]
+            win_vehicle = idle_avs[win_veh_index]
             used_vehicles.append(win_vehicle.vehicle_id)
-        else:
+
+            temp_veh_status = "base_assign"
+            Vehicle.update_vehicle(t, i_cust, win_vehicle, Regions.SubArea, temp_veh_status)
+            Person.update_person(t, i_cust, win_vehicle)
+    return
+#############################################################################################################
+
+
+#############################################################################################################
+def fcfs_smart_nn(av_fleet, customers, t):
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    len_avs = len(idle_avs)
+    unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
+    len_custs = len(unassign_cust)
+
+    if len_avs >= len_custs:
+        used_vehicles = []
+        for i_cust in unassign_cust:
             win_vehicle = Vehicle.Vehicle
-        pass_veh_assign[count_p] = [i_person, win_vehicle]
-
-    return pass_veh_assign
-#############################################################################################################
-
-
-#############################################################################################################
-def FCFS_smartNN(veh_idle_q, pass_no_assign_q):
-    len_pass = len(pass_no_assign_q)
-    len_veh = len(veh_idle_q)
-    pass_veh_assign = [[pass_no_assign_q[n], Vehicle.Vehicle] for n in range(len_pass)]
-
-    temp_pass_no_assign_q = pass_no_assign_q[0:len(pass_no_assign_q)]
-
-    if len_veh >= len_pass:
-        used_vehicles = []
-        count_p = -1
-        for i_person in pass_no_assign_q:
-            count_p += 1
             min_dist = Set.inf
-            win_veh_index = -1
-            veh_index = -1
-            for j_veh in veh_idle_q:
-                veh_index += 1
-                dist = Distance.dist_manhat(i_person, j_veh)
+            for j_av in idle_avs:
+                dist = Distance.dist_manhat(i_cust, j_av)
                 # make sure that two persons aren't assigned to same vehicle
-                if dist < min_dist and not (j_veh.vehicle_id in used_vehicles):
-                    win_veh_index = veh_index
+                if dist < min_dist and j_av not in used_vehicles:
+                    win_vehicle = j_av
                     min_dist = dist
-            if win_veh_index >= 0:
-                win_vehicle = veh_idle_q[win_veh_index]
-                used_vehicles.append(win_vehicle.vehicle_id)
-            else:
-                win_vehicle = Vehicle.Vehicle
-            pass_veh_assign[count_p] = [i_person, win_vehicle]
+            if win_vehicle.vehicle_id >= 0:
+                used_vehicles.append(win_vehicle)
 
+                temp_veh_status = "base_assign"
+                Vehicle.update_vehicle(t, i_cust, win_vehicle, Regions.SubArea, temp_veh_status)
+                Person.update_person(t, i_cust, win_vehicle)
     else:
-        for j_veh in veh_idle_q:
+        win_cust_list = []
+        for j_av in idle_avs:
             min_dist = Set.inf
-            win_pass_index = -1
-            pass_index = -1
-            for i_person in temp_pass_no_assign_q:
-                pass_index += 1
-                dist = Distance.dist_manhat(i_person, j_veh)
-                if dist < min_dist:
-                    win_pass_index = pass_index
+            win_cust = Person.Person
+            for i_cust in unassign_cust:
+                dist = Distance.dist_manhat(i_cust, j_av)
+                if dist < min_dist and i_cust not in win_cust_list:
+                    win_cust = i_cust
                     min_dist = dist
-            if win_pass_index >= 0:
-                win_pass = temp_pass_no_assign_q[win_pass_index]
-                temp_pass_no_assign_q.remove(win_pass)
+            if win_cust.person_id >= 0:
+                win_cust_list.append(win_cust)
 
-                temp_index = pass_no_assign_q.index(win_pass)
-                pass_veh_assign[temp_index] = [win_pass, j_veh]
-
-    return pass_veh_assign
+                temp_veh_status = "base_assign"
+                Vehicle.update_vehicle(t, win_cust, j_av, Regions.SubArea, temp_veh_status)
+                Person.update_person(t, win_cust, j_av)
+    return
 #############################################################################################################
-
 
 
 ############################################################################################################
-def FCFS_drop_smartNN(veh_idle_q, veh_drop_q, pass_no_assign_q):
-    # remove vehicles from dropoff queue that already have another pickup after their dropoff
-    new_veh_drop_queue = []
-    for a_veh in veh_drop_q:
-        if a_veh.next_pickup.person_id < 0:
-            new_veh_drop_queue.append(a_veh)
+def fcfs_drop_smart_nn(av_fleet, customers, t):
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    drop_avs = list(k_av for k_av in av_fleet if k_av.status == "enroute_dropoff" and k_av.next_pickup.person_id < 0)
 
-    len_veh_idle = len(veh_idle_q)
-    veh_idle_n_drop_Q = veh_idle_q + new_veh_drop_queue
-    tot_veh_length = len(veh_idle_n_drop_Q)
+    unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
+    len_custs = len(unassign_cust)
 
-    len_pass = len(pass_no_assign_q)
-    pass_veh_assign = [[pass_no_assign_q[n], Vehicle.Vehicle] for n in range(len_pass)]
+    idle_n_drop_avs = idle_avs + drop_avs
+    tot_veh_length = len(idle_n_drop_avs)
 
-    temp_pass_no_assign_q = pass_no_assign_q[0:len(pass_no_assign_q)]
-
-    if tot_veh_length >= len_pass:  #Flo wants to possible consider this
+    if tot_veh_length >= len_custs:
         used_vehicles = []
-        count_p = -1
-        for i_person in pass_no_assign_q:
-            count_p += 1
+        for i_cust in unassign_cust:
             min_dist = Set.inf
-            win_veh_index = -1
-            veh_index = -1
-            for j_veh in veh_idle_n_drop_Q:
-                veh_index += 1
-                if veh_index >= len_veh_idle:
-                    dist = Distance.dyn_dist_manhat(i_person, j_veh)
+            win_av = Vehicle.Vehicle
+            for j_av in idle_n_drop_avs:
+                if j_av.status == "enroute_dropoff":
+                    dist = Distance.dyn_dist_manhat(i_cust, j_av)
                 else:
-                    dist = Distance.dist_manhat(i_person, j_veh)
+                    dist = Distance.dist_manhat(i_cust, j_av)
                 # make sure that two persons aren't assigned to same vehicle
-                if dist < min_dist and not (j_veh.vehicle_id in used_vehicles):
-                    win_veh_index = veh_index
+                if dist < min_dist and j_av not in used_vehicles:
+                    win_av = j_av
                     min_dist = dist
-            if win_veh_index >= 0:
-                win_vehicle = veh_idle_n_drop_Q[win_veh_index]
-                used_vehicles.append(win_vehicle.vehicle_id)
-            else:
-                win_vehicle = Vehicle.Vehicle
-            pass_veh_assign[count_p] = [i_person, win_vehicle]
+            if win_av.vehicle_id >= 0:
+                used_vehicles.append(win_av)
 
-    else:
-        for j_veh in veh_idle_n_drop_Q:
-            min_dist = Set.inf
-            win_pass_index = -1
-            pass_index = -1
-            for i_person in temp_pass_no_assign_q:
-                pass_index += 1
-                if j_veh.next_drop.person_id >= 0:
-                    dist = Distance.dyn_dist_manhat(i_person, j_veh)
+                if win_av.status == "enroute_dropoff":
+                    temp_veh_status = "new_assign"
+                elif win_av.status == "idle":
+                    temp_veh_status = "base_assign"
                 else:
-                    dist = Distance.dist_manhat(i_person, j_veh)
-                if dist < min_dist:
-                    win_pass_index = pass_index
+                    temp_veh_status = "wrong"
+
+                Vehicle.update_vehicle(t, i_cust, win_av, Regions.SubArea, temp_veh_status)
+                Person.update_person(t, i_cust, win_av)
+    else:
+        win_cust_list = []
+        for j_av in idle_n_drop_avs:
+            min_dist = Set.inf
+            win_cust = Person.Person
+            for i_cust in unassign_cust:
+                if j_av.status == "enroute_dropoff":
+                    dist = Distance.dyn_dist_manhat(i_cust, j_av)
+                else:
+                    dist = Distance.dist_manhat(i_cust, j_av)
+
+                if dist < min_dist and i_cust not in win_cust_list:
+                    win_cust = i_cust
                     min_dist = dist
-            if win_pass_index >= 0:
-                win_pass = temp_pass_no_assign_q[win_pass_index]
-                temp_pass_no_assign_q.remove(win_pass)
 
-                temp_index = pass_no_assign_q.index(win_pass)
-                pass_veh_assign[temp_index] = [win_pass, j_veh]
+            if win_cust.person_id >= 0:
+                win_cust_list.append(win_cust)
 
-    return pass_veh_assign
+                if j_av.status == "enroute_dropoff":
+                    temp_veh_status = "new_assign"
+                elif j_av.status == "idle":
+                    temp_veh_status = "base_assign"
+                else:
+                    temp_veh_status = "wrong"
+
+                Vehicle.update_vehicle(t, win_cust, j_av, Regions.SubArea, temp_veh_status)
+                Person.update_person(t, win_cust, j_av)
+    return
 #############################################################################################################
 
 
-
+# changed one if condition
 ############################################################################################################
-def FCFS_drop_smartNN2(veh_idle_q, veh_drop_q, pass_no_assign_q):
-    # remove vehicles from dropoff queue that already have another pickup after their dropoff
-    new_veh_drop_queue = []
-    for a_veh in veh_drop_q:
-        if a_veh.next_pickup.person_id < 0:
-            new_veh_drop_queue.append(a_veh)
+def fcfs_drop_smart_nn2(av_fleet, customers, t):
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    len_idle_avs = len(idle_avs)
+    drop_avs = list(k_av for k_av in av_fleet if k_av.status == "enroute_dropoff" and k_av.next_pickup.person_id < 0)
 
-    len_veh_idle = len(veh_idle_q)
-    veh_idle_n_drop_Q = veh_idle_q + new_veh_drop_queue
-    tot_veh_length = len(veh_idle_n_drop_Q)
+    unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
+    len_custs = len(unassign_cust)
 
-    len_pass = len(pass_no_assign_q)
-    pass_veh_assign = [[pass_no_assign_q[n], Vehicle.Vehicle] for n in range(len_pass)]
+    idle_n_drop_avs = idle_avs + drop_avs
 
-    temp_pass_no_assign_q = pass_no_assign_q[0:len(pass_no_assign_q)]
-
-    if len_veh_idle >= len_pass:  #Flo wants to possible consider this
+    if len_idle_avs >= len_custs:
         used_vehicles = []
-        count_p = -1
-        for i_person in pass_no_assign_q:
-            count_p += 1
+        for i_cust in unassign_cust:
             min_dist = Set.inf
-            win_veh_index = -1
-            veh_index = -1
-            for j_veh in veh_idle_n_drop_Q:
-                veh_index += 1
-                if veh_index >= len_veh_idle:
-                    dist = Distance.dyn_dist_manhat(i_person, j_veh)
+            win_av = Vehicle.Vehicle
+            for j_av in idle_n_drop_avs:
+                if j_av.status == "enroute_dropoff":
+                    dist = Distance.dyn_dist_manhat(i_cust, j_av)
                 else:
-                    dist = Distance.dist_manhat(i_person, j_veh)
+                    dist = Distance.dist_manhat(i_cust, j_av)
                 # make sure that two persons aren't assigned to same vehicle
-                if dist < min_dist and not (j_veh.vehicle_id in used_vehicles):
-                    win_veh_index = veh_index
+                if dist < min_dist and j_av not in used_vehicles:
+                    win_av = j_av
                     min_dist = dist
-            if win_veh_index >= 0:
-                win_vehicle = veh_idle_n_drop_Q[win_veh_index]
-                used_vehicles.append(win_vehicle.vehicle_id)
-            else:
-                win_vehicle = Vehicle.Vehicle
-            pass_veh_assign[count_p] = [i_person, win_vehicle]
+            if win_av.vehicle_id >= 0:
+                used_vehicles.append(win_av)
 
-    else:
-        for j_veh in veh_idle_n_drop_Q:
-            min_dist = Set.inf
-            win_pass_index = -1
-            pass_index = -1
-            for i_person in temp_pass_no_assign_q:
-                pass_index += 1
-                if j_veh.next_drop.person_id >= 0:
-                    dist = Distance.dyn_dist_manhat(i_person, j_veh)
+                if win_av.status == "enroute_dropoff":
+                    temp_veh_status = "new_assign"
+                elif win_av.status == "idle":
+                    temp_veh_status = "base_assign"
                 else:
-                    dist = Distance.dist_manhat(i_person, j_veh)
-                if dist < min_dist:
-                    win_pass_index = pass_index
+                    temp_veh_status = "wrong"
+
+                Vehicle.update_vehicle(t, i_cust, win_av, Regions.SubArea, temp_veh_status)
+                Person.update_person(t, i_cust, win_av)
+    else:
+        win_cust_list = []
+        for j_av in idle_n_drop_avs:
+            min_dist = Set.inf
+            win_cust = Person.Person
+            for i_cust in unassign_cust:
+                if j_av.status == "enroute_dropoff":
+                    dist = Distance.dyn_dist_manhat(i_cust, j_av)
+                else:
+                    dist = Distance.dist_manhat(i_cust, j_av)
+
+                if dist < min_dist and i_cust not in win_cust_list:
+                    win_cust = i_cust
                     min_dist = dist
-            if win_pass_index >= 0:
-                win_pass = temp_pass_no_assign_q[win_pass_index]
-                temp_pass_no_assign_q.remove(win_pass)
 
-                temp_index = pass_no_assign_q.index(win_pass)
-                pass_veh_assign[temp_index] = [win_pass, j_veh]
+            if win_cust.person_id >= 0:
+                win_cust_list.append(win_cust)
 
-    return pass_veh_assign
+                if j_av.status == "enroute_dropoff":
+                    temp_veh_status = "new_assign"
+                elif j_av.status == "idle":
+                    temp_veh_status = "base_assign"
+                else:
+                    temp_veh_status = "wrong"
+
+                Vehicle.update_vehicle(t, win_cust, j_av, Regions.SubArea, temp_veh_status)
+                Person.update_person(t, win_cust, j_av)
+    return
 #############################################################################################################
 
 
-
 #############################################################################################################
-def idleOnly_minDist(veh_idle_q, pass_no_assign_q, t):
+def opt_idle(av_fleet, customers, t):
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    len_idle_avs = len(idle_avs)
 
-    len_veh = len(veh_idle_q)
-    len_pass = len(pass_no_assign_q)
-    pass_veh_assign = [[pass_no_assign_q[n], Vehicle.Vehicle] for n in range(len_pass)]
+    unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
+    len_custs = len(unassign_cust)
 
-    distM = [[0 for j in range(len_veh)] for i in range(len_pass)]
-    x = [[0 for j in range(len_veh)] for i in range(len_pass)]
+    dist_assgn = [[0 for jj in range(len_idle_avs)] for ii in range(len_custs)]
+    x = [[0 for jj in range(len_idle_avs)] for ii in range(len_custs)]
 
     count_pass = -1
-    for i_pass in pass_no_assign_q:
+    for i_pass in unassign_cust:
         count_pass += 1
         count_veh = -1
         cur_wait = t - i_pass.request_time
-        trav_wait_penalty = cur_wait * Set.gamma
-        for j_veh in veh_idle_q:
+        elapsed_wait_penalty = cur_wait * Set.gamma
+        for j_veh in idle_avs:
             count_veh += 1
-            distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                           + j_veh.curb_time_remain * Set.veh_speed
+            av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
+            dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - \
+                                                elapsed_wait_penalty + av_curb_wait
+
     t1 = time.time()
 # Model
     models = gurobipy.Model("idleOnly_minDist")
-    models.setParam( 'OutputFlag', False )
+    models.setParam('OutputFlag', False)
 
 # Decision Variables
-    for i in range(len_pass):
-        for j in range(len_veh):
-            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
+    for i in range(len_custs):
+        for j in range(len_idle_avs):
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj=dist_assgn[i][j], name='x_%s_%s' % (i,j))
     models.update()
 
 # constraints
 
     # if the number of unassigned travelers is less than the number of idle vehicles
-        # then make sure all the unassigned travelers are assigned a vehicle
-    if (len_pass <= len_veh):
-        for ii in range(len_pass):
-            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_veh)) == 1)
-        for jj in range(len_veh):
-            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass)) <= 1)
+    # then make sure all the unassigned travelers are assigned a vehicle
+    if len_custs <= len_idle_avs:
+        for ii in range(len_custs):
+            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_idle_avs)) == 1)
+        for jj in range(len_idle_avs):
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_custs)) <= 1)
     # else if the number of unassigned travelers is greater than the number of idle vehicles
         # then make sure all the idle vehicles are assigned to an unassigned traveler
     else:
-        for ii in range(len_pass):
-            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_veh)) <= 1)
-        for jj in range(len_veh):
-            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass)) == 1)
+        for ii in range(len_custs):
+            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_idle_avs)) <= 1)
+        for jj in range(len_idle_avs):
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_custs)) == 1)
 
     models.optimize()
 
     if models.status == gurobipy.GRB.Status.OPTIMAL:
-        for m_pass in range(len_pass):
-            for n_veh in range(len_veh):
+        for m_pass in range(len_custs):
+            for n_veh in range(len_idle_avs):
                 if x[m_pass][n_veh].X == 1:
-                    pass_veh_assign[m_pass] = [pass_no_assign_q[m_pass], veh_idle_q[n_veh]]
+                    temp_veh_status = "base_assign"
+                    win_cust = unassign_cust[m_pass]
+                    win_av = idle_avs[n_veh]
+                    Vehicle.update_vehicle(t, win_cust, win_av, Regions.SubArea, temp_veh_status)
+                    Person.update_person(t, win_cust, win_av)
                     break
     else:
         sys.exit("No Optimal Solution - idleOnly_minDist")
     # print("Vehicles= ", len_veh, "  Passengers= ", len_pass, "  time=", time.time() - t1)
-    return pass_veh_assign
+    return
 #############################################################################################################
 
 
 #############################################################################################################
-def idleDrop_minDist(veh_idle_q, veh_drop_q, pass_no_assign_q, pass_no_pick_q, t):
-    # remove vehicles from dropoff queue that already have another pickup after their dropoff
-    new_veh_drop_queue = []
-    for a_veh in veh_drop_q:
-        if a_veh.next_pickup.person_id < 0:
-            new_veh_drop_queue.append(a_veh)
+def opt_idle_pick(av_fleet, customers, t):
 
-    len_veh_idle = len(veh_idle_q)
-    veh_idle_n_drop_Q = veh_idle_q + new_veh_drop_queue
-    tot_veh_length = len(veh_idle_n_drop_Q)
-    
-    len_pass = len(pass_no_assign_q)
-    pass_veh_assign = [[pass_no_assign_q[n], Vehicle.Vehicle] for n in range(len_pass)]
+    unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
+    assign_cust = list(ii_cust for ii_cust in customers if ii_cust.status == "assigned")
+    temp_av_fleet = av_fleet[:]
 
-    distM = [[0 for j in range(tot_veh_length)] for i in range(len_pass)]
-    x = [[0 for j in range(tot_veh_length)] for i in range(len_pass)]
+    for j_av in temp_av_fleet:
+        i_cust = j_av.next_pickup
+        if i_cust.reassigned == 1:
+            assign_cust.remove(i_cust)
+            temp_av_fleet.remove(j_av)
 
+    idle_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status == "idle")
+    pick_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status == "enroute_pickup")
+
+    # just want to get avs in the right order
+    idle_n_pick_avs = idle_avs + pick_avs
+    len_idle_n_pick_av = len(idle_n_pick_avs)
+
+    no_assign_or_pick_cust = unassign_cust + assign_cust
+    len_no_assign_or_pick_cust = len(no_assign_or_pick_cust)
+
+    dist_assgn = [[0 for j in range(len_idle_n_pick_av)] for i in range(len_no_assign_or_pick_cust)]
+    x = [[0 for j in range(len_idle_n_pick_av)] for i in range(len_no_assign_or_pick_cust)]
+    prev_assign = [0 for z in range(len_no_assign_or_pick_cust)]
 
     count_pass = -1
-    for i_pass in pass_no_assign_q:
+    for i_pass in no_assign_or_pick_cust:
         count_pass += 1
         count_veh = -1
         cur_wait = t - i_pass.request_time
-        trav_wait_penalty = cur_wait*Set.gamma
-        for j_veh in veh_idle_n_drop_Q:
+        elapsed_wait_penalty = cur_wait * Set.gamma
+        for j_veh in idle_n_pick_avs:
             count_veh += 1
-            # if vehicle state is enroute_dropoff - need to include dropoff distance as well
-            if count_veh >= len_veh_idle:
-                distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                               + Set.dropoff_penalty \
-                                               + Set.curb_drop_time*Set.veh_speed
+
+            if i_pass.status == "unassigned":
+
+                if j_veh.status == "idle":
+                    av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                                   + av_curb_wait
+                elif j_veh.status == "enroute_pickup":
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                                   + Set.reassign_penalty
+                else:
+                    sys.exit("Something wrong with AV state - idlePick_minDist")
+
+            elif i_pass.status == "assigned":
+                prev_assign[count_pass] = 1
+
+                if j_veh.next_pickup == i_pass:
+                    if j_veh.status == "enroute_pickup":
+                        dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty
+                    else:
+                        sys.exit("Something wrong with current AV-customer match - idlePick_minDist")
+
+                elif j_veh.status == "idle":
+                    av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                                   + Set.reassign_penalty + av_curb_wait
+                elif j_veh.status == "enroute_pickup":
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                                   + 2*Set.reassign_penalty
+                else:
+                    sys.exit("Something wrong with AV state - idlePick_minDist")
             else:
-                distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                               + j_veh.curb_time_remain * Set.veh_speed
+                sys.exit("Something wrong with customer state - idlePick_minDist")
+    t1 = time.time()
+
+    # Model
+    models = gurobipy.Model("idlePick_minDist")
+    models.setParam('OutputFlag', False)
+
+    # Decision Variables
+    for i in range(len_no_assign_or_pick_cust):
+        for j in range(len_idle_n_pick_av):
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj=dist_assgn[i][j], name='x_%s_%s' % (i,j))
+    models.update()
+
+    # constraints
+
+    # Previously assigned passengers must be assigned a vehicle
+    for ii in range(len_no_assign_or_pick_cust):
+        models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_idle_n_pick_av)) - prev_assign[ii] >= 0)
+
+    if len_no_assign_or_pick_cust <= len_idle_n_pick_av:
+        for ii in range(len_no_assign_or_pick_cust):
+            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_idle_n_pick_av)) == 1)
+        for jj in range(len_idle_n_pick_av):
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_no_assign_or_pick_cust)) <= 1)
+
+    else:
+        for ii in range(len_no_assign_or_pick_cust):
+            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_idle_n_pick_av)) <= 1)
+        for jj in range(len_idle_n_pick_av):
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_no_assign_or_pick_cust)) == 1)
+
+    models.optimize()
+
+    if models.status == gurobipy.GRB.Status.OPTIMAL:
+        for n_veh in range(len_idle_n_pick_av):
+            found = 0
+            for m_pass in range(len_no_assign_or_pick_cust):
+                if x[m_pass][n_veh].X == 1:
+                    win_cust = no_assign_or_pick_cust[m_pass]
+                    win_av = idle_n_pick_avs[n_veh]
+
+                    if win_av.next_pickup != win_cust:
+
+                        if win_cust.status == "unassigned":
+                            Person.update_person(t, win_cust, win_av)
+                        elif win_cust.status == "assigned":
+                            win_cust.status = "reassign"
+                            Person.update_person(t, win_cust, win_av)
+
+                        if win_av.status == "idle":
+                            temp_veh_status = "base_assign"
+                        elif win_av.status == "enroute_pickup":
+                            temp_veh_status = "reassign"
+                        else:
+                            temp_veh_status = "wrong"
+
+                        Vehicle.update_vehicle(t, win_cust, win_av, Regions.SubArea, temp_veh_status)
+
+                    found = 1
+                    break
+
+            if found == 0:
+                no_win_av = idle_n_pick_avs[n_veh]
+                if no_win_av.status == "enroute_pickup":
+                    temp_veh_status = "unassign"
+                    Vehicle.update_vehicle(t, Person.Person, no_win_av, Regions.SubArea, temp_veh_status)
+    else:
+        sys.exit("No Optimal Solution - idlePick_minDist")
+    # print("Vehicles= ", tot_veh_length, "  Passengers= ", len_no_assign_or_pick_cust, "  time=", time.time()-t1)
+    return
+#############################################################################################################
+
+
+#############################################################################################################
+def opt_idle_drop(av_fleet, customers, t):
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    len_idle_avs = len(idle_avs)
+    drop_avs = list(k_av for k_av in av_fleet if k_av.status == "enroute_dropoff" and k_av.next_pickup.person_id < 0)
+
+    unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
+    len_custs = len(unassign_cust)
+
+    idle_n_drop_avs = idle_avs + drop_avs
+    tot_veh_length = len(idle_n_drop_avs)
+
+    dist_assgn = [[0 for j in range(tot_veh_length)] for i in range(len_custs)]
+    x = [[0 for j in range(tot_veh_length)] for i in range(len_custs)]
+
+    count_pass = -1
+    for i_pass in unassign_cust:
+        count_pass += 1
+        count_veh = -1
+        cur_wait = t - i_pass.request_time
+        elapsed_wait_penalty = cur_wait * Set.gamma
+        for j_veh in idle_n_drop_avs:
+            count_veh += 1
+
+            # if vehicle state is enroute_dropoff - need to include dropoff distance as well
+            if count_veh >= len_idle_avs:
+                av_curb_wait = Set.curb_drop_time * Set.veh_speed
+                dist_assgn[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                               + Set.dropoff_penalty + av_curb_wait
+            else:
+                av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
+                dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty + av_curb_wait
 
     t1 = time.time()
     # Model
     models = gurobipy.Model("idleDrop_minDist")
-    models.setParam( 'OutputFlag', False )
+    models.setParam('OutputFlag', False)
 
     # Decision Variables
-    for i in range(len_pass):
+    for i in range(len_custs):
         for j in range(tot_veh_length):
-            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj=dist_assgn[i][j], name='x_%s_%s' % (i, j))
     models.update()
 
     # constraints
-    if (len_pass <= tot_veh_length):
-        for ii in range(len_pass):
+    if len_custs <= tot_veh_length:
+        for ii in range(len_custs):
             models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) == 1)
         for jj in range(tot_veh_length):
-            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass)) <= 1)
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_custs)) <= 1)
 
     else:
-        for ii in range(len_pass):
+        for ii in range(len_custs):
             models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) <= 1)
         for jj in range(tot_veh_length):
-            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass)) == 1)
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_custs)) == 1)
 
     models.optimize()
 
     if models.status == gurobipy.GRB.Status.OPTIMAL:
-        for m_pass in range(len_pass):
+        for m_pass in range(len_custs):
             for n_veh in range(tot_veh_length):
                 if x[m_pass][n_veh].X == 1:
-                    pass_veh_assign[m_pass] = [pass_no_assign_q[m_pass], veh_idle_n_drop_Q[n_veh]]
+                    win_cust = unassign_cust[m_pass]
+                    win_av = idle_n_drop_avs[n_veh]
+
+                    if win_av.status == "idle":
+                        temp_veh_status = "base_assign"
+                    elif win_av.status == "enroute_dropoff":
+                        temp_veh_status = "new_assign"
+                    else:
+                        temp_veh_status = "wrong"
+
+                    Vehicle.update_vehicle(t, win_cust, win_av, Regions.SubArea, temp_veh_status)
+                    Person.update_person(t, win_cust, win_av)
                     break
     else:
         sys.exit("No Optimal Solution - idleDrop_minDist")
     # print("Vehicles= ", tot_veh_length, "  Passengers= ", len_pass, "  time=", time.time() - t1)
-    return pass_veh_assign
+    return
 #############################################################################################################
 
 
+# changed one if condition and one set of constraints
 #############################################################################################################
-def idlePick_minDist(veh_idle_q, veh_pick_q, pass_no_assign_q, pass_no_pick_q, t):
+def opt_idle_drop2(av_fleet, customers, t):
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    len_idle_avs = len(idle_avs)
+    drop_avs = list(k_av for k_av in av_fleet if k_av.status == "enroute_dropoff" and k_av.next_pickup.person_id < 0)
 
-    len_veh_idle = len(veh_idle_q)
-    veh_idle_n_pick = veh_idle_q + veh_pick_q
-    len_veh_idle_n_pick = len(veh_idle_n_pick)
-    
-    len_pass_noAssign = len(pass_no_assign_q)
-    pass_noAssignPick_Q = pass_no_assign_q + pass_no_pick_q
-    len_pass_noPickAssign = len(pass_noAssignPick_Q)
-    
-    pass_veh_assign = [[pass_noAssignPick_Q[n], Vehicle.Vehicle] for n in range(len_pass_noPickAssign) ]
+    unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
+    len_custs = len(unassign_cust)
 
-    distM = [[0 for j in range(len_veh_idle_n_pick)] for i in range(len_pass_noPickAssign)]
-    x = [[0 for j in range(len_veh_idle_n_pick)] for i in range(len_pass_noPickAssign)]
-    # y = [[0 for j in range(len_veh_idle_n_pick)] for i in range(len_pass_noPickAssign)]
-    prev_assign = [0 for i in range(len_pass_noPickAssign)]
+    idle_n_drop_avs = idle_avs + drop_avs
+    tot_veh_length = len(idle_n_drop_avs)
+
+    dist_assgn = [[0 for j in range(tot_veh_length)] for i in range(len_custs)]
+    x = [[0 for j in range(tot_veh_length)] for i in range(len_custs)]
 
     count_pass = -1
-    for i_pass in pass_noAssignPick_Q:
+    for i_pass in unassign_cust:
         count_pass += 1
         count_veh = -1
         cur_wait = t - i_pass.request_time
-        trav_wait_penalty = cur_wait * Set.gamma
-        for j_veh in veh_idle_n_pick:
+        elapsed_wait_penalty = cur_wait * Set.gamma
+        for j_veh in idle_n_drop_avs:
             count_veh += 1
 
-            if count_pass < len_pass_noAssign:
-                if count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                                   + j_veh.curb_time_remain * Set.veh_speed
-                else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                                   + Set.reassign_penalty \
-
+            # if vehicle state is enroute_dropoff - need to include dropoff distance as well
+            if count_veh >= len_idle_avs:
+                av_curb_wait = Set.curb_drop_time * Set.veh_speed
+                dist_assgn[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                               + Set.dropoff_penalty + av_curb_wait
             else:
-                prev_assign[count_pass] = 1
-                if j_veh.next_pickup == i_pass:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty
-                elif count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                                   + Set.reassign_penalty \
-                                                   + j_veh.curb_time_remain * Set.veh_speed
-                else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                                   + 2*Set.reassign_penalty
+                av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
+                dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty + av_curb_wait
+
     t1 = time.time()
     # Model
-    models = gurobipy.Model("idlePick_minDist")
-    models.setParam( 'OutputFlag', False )
+    models = gurobipy.Model("idleDrop_minDist")
+    models.setParam('OutputFlag', False)
 
     # Decision Variables
-    for i in range(len_pass_noPickAssign):
-        for j in range(len_veh_idle_n_pick):
-            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
+    for i in range(len_custs):
+        for j in range(tot_veh_length):
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj=dist_assgn[i][j], name='x_%s_%s' % (i, j))
     models.update()
 
     # constraints
+    if len_custs <= len_idle_avs:
+        for ii in range(len_custs):
+            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) == 1)
+        for jj in range(tot_veh_length):
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_custs)) <= 1)
 
-    #Previously assigned passengers must be assigned a vehicle
-    for ii in range(len_pass_noPickAssign):
-        models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_veh_idle_n_pick)) - prev_assign[ii] >= 0)
-
-    if (len_pass_noPickAssign <= len_veh_idle_n_pick):
-        for ii in range(len_pass_noPickAssign):
-            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_veh_idle_n_pick)) == 1)
-        for jj in range(len_veh_idle_n_pick):
-            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass_noPickAssign)) <= 1)
-
+    # if # open requests > # idle AVs;
     else:
-        for ii in range(len_pass_noPickAssign):
-            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(len_veh_idle_n_pick)) <= 1)
-        for jj in range(len_veh_idle_n_pick):
-            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass_noPickAssign)) == 1)
+        # then, make sure the total number of assigned customers at least number of idle AVs
+        models.addConstr(
+            gurobipy.quicksum(x[iii][jjj] for iii in range(len_custs) for jjj in range(tot_veh_length)) >= len_idle_avs)
+        # then, assign passenger to at most one AV
+        for ii in range(len_custs):
+            models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) <= 1)
+        # then, assign AV to at most one passenger
+        for jj in range(tot_veh_length):
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_custs)) <= 1)
 
     models.optimize()
 
     if models.status == gurobipy.GRB.Status.OPTIMAL:
-        for m_pass in range(len_pass_noPickAssign):
-            for n_veh in range(len_veh_idle_n_pick):
+        for m_pass in range(len_custs):
+            for n_veh in range(tot_veh_length):
                 if x[m_pass][n_veh].X == 1:
-                    pass_veh_assign[m_pass] = [pass_noAssignPick_Q[m_pass], veh_idle_n_pick[n_veh]]
+                    win_cust = unassign_cust[m_pass]
+                    win_av = idle_n_drop_avs[n_veh]
+
+                    if win_av.status == "idle":
+                        temp_veh_status = "base_assign"
+                    elif win_av.status == "enroute_dropoff":
+                        temp_veh_status = "new_assign"
+                    else:
+                        temp_veh_status = "wrong"
+
+                    Vehicle.update_vehicle(t, win_cust, win_av, Regions.SubArea, temp_veh_status)
+                    Person.update_person(t, win_cust, win_av)
                     break
     else:
-        sys.exit("No Optimal Solution - idlePick_minDist")
-    # print("Vehicles= ", len_veh_idle_n_pick, "  Passengers= ", len_pass_noPickAssign, "  time=", time.time() - t1)
-    return pass_veh_assign
+        sys.exit("No Optimal Solution - idleDrop_minDist")
+    # print("Vehicles= ", tot_veh_length, "  Passengers= ", len_pass, "  time=", time.time() - t1)
+    return
 #############################################################################################################
 
 
 #############################################################################################################
-def idlePickDrop_minDist(veh_idle_q, veh_pick_q, veh_drop_q, pass_no_assign_q, pass_no_pick_q, t):
+def opt_idle_pick_drop(av_fleet, customers, t):
 
-    len_veh_idle = len(veh_idle_q)
-    len_veh_drop = len(veh_drop_q)
+    unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
+    assign_cust = list(ii_cust for ii_cust in customers if ii_cust.status == "assigned")
+    temp_av_fleet = av_fleet[:]
 
-    all_veh = veh_idle_q  + veh_drop_q + veh_pick_q
-    tot_veh_length = len(all_veh)
+    for j_av in temp_av_fleet:
+        i_cust = j_av.next_pickup
+        if i_cust.reassigned == 1:
+            assign_cust.remove(i_cust)
+            temp_av_fleet.remove(j_av)
 
-    len_pass_noAssign = len(pass_no_assign_q)
-    len_pass_noPick = len(pass_no_pick_q)
-    pass_noAssignPick_Q = pass_no_assign_q + pass_no_pick_q
-    len_pass_noPickAssign = len(pass_noAssignPick_Q)
+    idle_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status == "idle")
+    drop_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status == "enroute_dropoff")
+    pick_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status == "enroute_pickup")
 
-    pass_veh_assign = [[pass_noAssignPick_Q[n], Vehicle.Vehicle] for n in range(len_pass_noPickAssign) ]
+    # just want to get avs in the right order
+    all_avs = idle_avs + drop_avs + pick_avs
+    tot_veh_length = len(all_avs)
 
-    distM = [[0 for j in range(tot_veh_length)] for i in range(len_pass_noPickAssign)]
-    x = [[0 for j in range(tot_veh_length)] for i in range(len_pass_noPickAssign)]
-    prev_assign = [0 for i in range(len_pass_noPickAssign)]
+    no_assign_or_pick_cust = unassign_cust + assign_cust
+    len_no_assign_or_pick_cust = len(no_assign_or_pick_cust)
+
+    dist_assgn = [[0 for j in range(tot_veh_length)] for i in range(len_no_assign_or_pick_cust)]
+    x = [[0 for j in range(tot_veh_length)] for i in range(len_no_assign_or_pick_cust)]
+    prev_assign = [0 for z in range(len_no_assign_or_pick_cust)]
 
     count_pass = -1
-    for i_pass in pass_noAssignPick_Q:
+    for i_pass in no_assign_or_pick_cust:
         count_pass += 1
         count_veh = -1
         cur_wait = t - i_pass.request_time
-        trav_wait_penalty = cur_wait * Set.gamma
-        for j_veh in all_veh:
+        elapsed_wait_penalty = cur_wait * Set.gamma
+        for j_veh in all_avs:
             count_veh += 1
 
-            if count_pass < len_pass_noAssign:
-                if count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                                   + j_veh.curb_time_remain * Set.veh_speed
-                elif count_veh < len_veh_idle + len_veh_drop:
-                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                                   + Set.dropoff_penalty \
-                                                   + Set.curb_drop_time * Set.veh_speed
-                else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                                   + Set.reassign_penalty
+            if i_pass.status == "unassigned":
 
-            else:
-                prev_assign[count_pass] = 1
-                if j_veh.next_pickup == i_pass:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty
-                elif count_veh < len_veh_idle:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                                   + Set.reassign_penalty \
-                                                   + j_veh.curb_time_remain * Set.veh_speed
-                elif count_veh < len_veh_idle + len_veh_drop:
-                    distM[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - trav_wait_penalty \
-                                                   + Set.dropoff_penalty \
-                                                   + Set.reassign_penalty \
-                                                   + Set.curb_drop_time * Set.veh_speed
+                if j_veh.status == "idle":
+                    av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                                   + av_curb_wait
+                elif j_veh.status == "enroute_dropoff":
+                    av_curb_wait = Set.curb_drop_time * Set.veh_speed
+                    dist_assgn[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                                   + Set.dropoff_penalty + av_curb_wait
+                elif j_veh.status == "enroute_pickup":
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                                   + Set.reassign_penalty
                 else:
-                    distM[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - trav_wait_penalty \
+                    sys.exit("Something wrong with AV state - idlePickDrop_minDist")
+
+            elif i_pass.status == "assigned":
+                prev_assign[count_pass] = 1
+
+                if j_veh.next_pickup == i_pass:
+                    if j_veh.status == "enroute_pickup":
+                        dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty
+                    elif j_veh.status == "enroute_dropoff":
+                        av_curb_wait = Set.curb_drop_time * Set.veh_speed
+                        dist_assgn[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                                   + Set.dropoff_penalty + av_curb_wait
+                    else:
+                        sys.exit("Something wrong with current AV-customer match - idlePickDrop_minDist")
+
+                elif j_veh.status == "idle":
+                    av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                                   + Set.reassign_penalty + av_curb_wait
+                elif j_veh.status == "enroute_dropoff":
+                    av_curb_wait = Set.curb_drop_time * Set.veh_speed
+                    dist_assgn[count_pass][count_veh] = Distance.dyn_dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
+                                                   + Set.dropoff_penalty + Set.reassign_penalty + av_curb_wait
+                elif j_veh.status == "enroute_pickup":
+                    dist_assgn[count_pass][count_veh] = Distance.dist_manhat(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + 2*Set.reassign_penalty
+                else:
+                    sys.exit("Something wrong with AV state - idlePickDrop_minDist")
+            else:
+                sys.exit("Something wrong with customer state - idlePickDrop_minDist")
     t1 = time.time()
 
     # Model
@@ -584,47 +764,68 @@ def idlePickDrop_minDist(veh_idle_q, veh_pick_q, veh_drop_q, pass_no_assign_q, p
     models.setParam( 'OutputFlag', False )
 
     # Decision Variables
-    for i in range(len_pass_noPickAssign):
+    for i in range(len_no_assign_or_pick_cust):
         for j in range(tot_veh_length):
-            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj = distM[i][j], name = 'x_%s_%s' % (i,j))
+            x[i][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj=dist_assgn[i][j], name='x_%s_%s' % (i,j))
     models.update()
 
     # constraints
 
     # Previously assigned passengers must be assigned a vehicle
-    for ii in range(len_pass_noPickAssign):
+    for ii in range(len_no_assign_or_pick_cust):
         models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) - prev_assign[ii] >= 0)
 
-    if (len_pass_noPickAssign <= tot_veh_length):
-        for ii in range(len_pass_noPickAssign):
+    if len_no_assign_or_pick_cust <= tot_veh_length:
+        for ii in range(len_no_assign_or_pick_cust):
             models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) == 1)
         for jj in range(tot_veh_length):
-            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass_noPickAssign)) <= 1)
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_no_assign_or_pick_cust)) <= 1)
 
     else:
-        for ii in range(len_pass_noPickAssign):
+        for ii in range(len_no_assign_or_pick_cust):
             models.addConstr(gurobipy.quicksum(x[ii][j] for j in range(tot_veh_length)) <= 1)
         for jj in range(tot_veh_length):
-            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_pass_noPickAssign)) == 1)
+            models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_no_assign_or_pick_cust)) == 1)
 
     models.optimize()
 
     if models.status == gurobipy.GRB.Status.OPTIMAL:
-        for m_pass in range(len_pass_noPickAssign):
-            for n_veh in range(tot_veh_length):
-                if x[m_pass][n_veh].X > 0 and x[m_pass][n_veh].X < 1:
-                    sys.exit("Non Binary Variable - idlePickDrop_minDist")
+        for n_veh in range(tot_veh_length):
+            found = 0
+            for m_pass in range(len_no_assign_or_pick_cust):
                 if x[m_pass][n_veh].X == 1:
-                    pass_veh_assign[m_pass] = [pass_noAssignPick_Q[m_pass], all_veh[n_veh]]
+                    win_cust = no_assign_or_pick_cust[m_pass]
+                    win_av = all_avs[n_veh]
+
+                    if win_av.next_pickup != win_cust:
+
+                        if win_cust.status == "unassigned":
+                            Person.update_person(t, win_cust, win_av)
+                        elif win_cust.status == "assigned":
+                            win_cust.status = "reassign"
+                            Person.update_person(t, win_cust, win_av)
+
+                        if win_av.status == "idle":
+                            temp_veh_status = "base_assign"
+                        elif win_av.status == "enroute_dropoff":
+                            temp_veh_status = "new_assign"
+                        elif win_av.status == "enroute_pickup":
+                            temp_veh_status = "reassign"
+                        else:
+                            temp_veh_status = "wrong"
+                        Vehicle.update_vehicle(t, win_cust, win_av, Regions.SubArea, temp_veh_status)
+                    found = 1
                     break
+            if found == 0:
+                no_win_av = all_avs[n_veh]
+                if no_win_av.status in["enroute_pickup", "enroute_dropoff"]:
+                    temp_veh_status = "unassign"
+                    Vehicle.update_vehicle(t, Person.Person, no_win_av, Regions.SubArea, temp_veh_status)
     else:
         sys.exit("No Optimal Solution - idlePickDrop_minDist")
-
-    # print("Vehicles= ", tot_veh_length, "  Passengers= ", len_pass_noPickAssign, "  time=", time.time()-t1)
-    return pass_veh_assign
+    # print("Vehicles= ", tot_veh_length, "  Passengers= ", len_no_assign_or_pick_cust, "  time=", time.time()-t1)
+    return
 #############################################################################################################
-
-
 
 
 # Dandl

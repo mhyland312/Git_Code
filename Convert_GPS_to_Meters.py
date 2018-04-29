@@ -35,8 +35,7 @@ def convert_gps_to_meter(file_path):
     xy_traveler_file_writer = csv.writer(xy_traveler_file, lineterminator='\n', delimiter=',', quotechar='"',
                              quoting=csv.QUOTE_NONNUMERIC)
     xy_traveler_file_writer.writerow(["# person_id","Request_Time [min]",
-                                  "Pickup x", "Pickup y", "Dropoff x", "Dropoff y",
-                                  "group_size"])
+                                  "Pickup x", "Pickup y", "Dropoff x", "Dropoff y", "group_size"])
 
     for i_trip in range(len(trip_id)):
         pickup_x = int(gd.vincenty(base_pt, (min_lat, pickup_lon[i_trip])).meters)

@@ -25,6 +25,7 @@ class Vehicle(object):
     status = "string"
     reassigned = 0
     curb_time_remain = 0
+    last_drop_time = 0
 
     # output information - update throughout simulation
     total_distance = 0.0
@@ -61,6 +62,7 @@ class Vehicle(object):
         self.status = status
         self.reassigned = 0
         self.curb_time_remain = 0
+        self.last_drop_time = 0
 
         # output information - update throughout simulation
         self.total_distance = 0.0
@@ -83,7 +85,6 @@ def make_vehicle(vehicle_id, start_location_x, start_location_y, capacity, statu
     vehicle1 = Vehicle(vehicle_id, start_location_x, start_location_y, capacity, status)
     return vehicle1
 ##############################################################################
-
 
 
 ##############################################################################
@@ -147,7 +148,6 @@ def move_vehicle_manhat(t, vehicle, person, sub_area):
 ##############################################################################
 
 
-
 ##############################################################################
 # if more than one traveler demand request in vehicle - decide which demand to drop off first
 # def get_next_drop(vehicle):
@@ -160,7 +160,6 @@ def move_vehicle_manhat(t, vehicle, person, sub_area):
 #             Win_Pass = i_pass
 #     return Win_Pass
 ##############################################################################
-
 
 
 ##############################################################################
@@ -227,7 +226,6 @@ def get_next_availability(vehicle):
 ##############################################################################
 
 
-
 ##############################################################################
 # vehicle is changing statuses - needs to be updated
 def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
@@ -264,6 +262,7 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
             vehicle.curb_time_remain = Settings.curb_drop_time
             vehicle.next_drop = Person.Person
             vehicle.next_sub_area = Regions.SubArea
+            vehicle.last_drop_time = t
 
             # Option 1b,i
             # after drop-off, check to see if AV has next traveler to pick up
@@ -271,7 +270,7 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
                 # dynamic information cont.
                 vehicle.current_dest_x = vehicle.next_pickup.pickup_location_x
                 vehicle.current_dest_y = vehicle.next_pickup.pickup_location_y
-                vehicle.next_pickup = vehicle.next_pickup
+                # vehicle.next_pickup = vehicle.next_pickup
                 vehicle.status = "enroute_pickup"
 
             # Option 1b,ii
@@ -353,15 +352,15 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
     elif temp_veh_status == "unassign":
 
         # dynamic information
-        vehicle.current_dest_x = vehicle.position_x
-        vehicle.current_dest_y = vehicle.position_y
         vehicle.next_pickup = Person.Person
         vehicle.next_sub_area = Regions.SubArea
         if vehicle.next_drop.person_id < 0:
             vehicle.status = "idle"
+            vehicle.current_dest_x = vehicle.position_x
+            vehicle.current_dest_y = vehicle.position_y
         # current load, position_x/y, next_drop, status, reassigned, curb_remain_time - do not change
 
-    # Option 5 - AV was assigned to relocate/reposition to a different subArea
+    # Option 6 - AV was assigned to relocate/reposition to a different subArea
     # Dandl - check to make sure this makes sense
     elif temp_veh_status == "relocate":
 

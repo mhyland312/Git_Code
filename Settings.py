@@ -2,10 +2,10 @@ __author__ = 'Mike'
 
 simulation_len = 2.0  # hours
 
-T_max = int(simulation_len*60*60)  # convert hours to seconds  #simulation time
+t_max = int(simulation_len * 60 * 60)  # convert hours to seconds  #simulation time
 veh_speed = 53.0  # ft/s = #35mph #vehicle speed
 veh_capacity = 5
-max_groupSize = 2
+max_group_size = 2
 time_step = 1  # seconds
 delta_veh_dist = veh_speed * time_step  # feet
 

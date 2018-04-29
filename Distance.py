@@ -1,6 +1,6 @@
-__author__ = 'Mike'
-
 import math
+
+__author__ = 'Mike'
 
 
 def dist_euclid(person, vehicle):

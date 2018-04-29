@@ -43,7 +43,7 @@ class Person(object):
         self.travel_time = -3
         self.vehicle_id = -3
         self.old_vehicles = []
-        self.status = "unassigned"
+        self.status = "un_requested"
         self.reassigned = 0
 
 
@@ -63,6 +63,10 @@ def get_travel_time(pickup_time, dropoff_time):
     travel_time = dropoff_time - pickup_time
     return travel_time
 
+def made_request():
+    status = "unassigned"
+    return status
+
 def status_assigned():
     status = "assigned"
     return status
@@ -77,8 +81,10 @@ def status_served():
 
 
 def update_person(t, person_1, vehicle1):
+    if person_1.status == "un_requested":
+        person_1.status = made_request()
     
-    if person_1.status == "unassigned":
+    elif person_1.status == "unassigned":
         person_1.status = status_assigned()
         person_1.vehicle_id = vehicle1.vehicle_id
         person_1.old_vehicles.append(vehicle1.vehicle_id)
