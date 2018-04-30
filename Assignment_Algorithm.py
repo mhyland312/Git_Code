@@ -54,31 +54,20 @@ def assign_veh_opt(av_fleet, customers, opt_method, t):
 # 3) might be necessary to pass more parameters for my algorithm:
 # - length of time horizon
 # - minimal imbalance
+
+
 #############################################################################################################
 def relocate_veh(av_fleet, area, relocate_method, t, weekday):
     answer = "blank"
     if relocate_method == "Dandl":
-        answer = relocate_dandl(av_fleet, sub_areas, t, weekday)   # <-- this function is at bottom of file
-    elif relocate_method == "Hyland":
-        answer = relocate_hyland(av_fleet, sub_areas, t, weekday)
+        answer = relocate_dandl(av_fleet, area, t, weekday)   # <-- this function is at bottom of file
+    # elif relocate_method == "Hyland":
+    #     answer = relocate_hyland(av_fleet, area, t, weekday)
     else:
         print("Error: No_assignment_method")
     return answer
 #############################################################################################################
 
-
-
-#############################################################################################################
-def relocate_veh(av_fleet, sub_areas, relocate_method, t):
-    answer = "blank"
-    if relocate_method == "Dandl":
-        answer = relocate_dandl(av_fleet, sub_areas, t)   # <-- this function is at bottom of file
-    elif relocate_method == "Hyland":
-        answer = relocate_hyland(av_fleet, sub_areas, t)
-    else:
-        print("Error: No_assignment_method")
-    return answer
-#############################################################################################################
 
 
 #############################################################################################################
@@ -854,14 +843,20 @@ def opt_idle_pick_drop(av_fleet, customers, t):
 # Input: complete information about all vehicles and all sub_areas, as well as the current time
 # Output: I can basically work with anything, but possibly, a list of AVs to relocate, and their relocating subAreas
 #
-# Comment FD:
-# changed input sub_areas to the whole area class
-# it might be necessary to add two more parameters -> it might be interesting to see how they influence results
-time_horizon = 30*60                            # rolling horizon in seconds
-min_imbalance = 3                               # below this imbalance, operator should not act
-penalty_remaining_imbalance = time_horizon/2    # penalty for remaining single imbalance unit of a subArea
+
 #############################################################################################################
-def relocate_dandl(av_fleet, area, t, weekday, time_horizon, min_imbalance):
+#def relocate_dandl(av_fleet, area, t, weekday, time_horizon, min_imbalance):
+def relocate_dandl(av_fleet, area, t, weekday):
+
+    # Comment FD:
+    # changed input sub_areas to the whole area class
+    # it might be necessary to add two more parameters -> it might be interesting to see how they influence results
+    time_horizon = 30 * 60  # rolling horizon in seconds
+    min_imbalance = 3  # below this imbalance, operator should not act
+    penalty_remaining_imbalance = time_horizon / 2  # penalty for remaining single imbalance unit of a subArea
+
+
+
     # approach:
     # ---------
     # 1) create vehicle availability list
@@ -901,10 +896,19 @@ def relocate_dandl(av_fleet, area, t, weekday, time_horizon, min_imbalance):
     veh_av_for_relocation = []  # list of veh_obj
     sub_area_deficiency = []    # list of (subArea_obj, penalty_factor)
     all_def_id = 0
+
+    ####################################################
+    # Help FD!
     for sa_key, c_subArea in area.sub_areas.items():
+        # Issue 1: getDemandPredictionsPerArea is an attribute of Area not SubArea
         fc_val = c_subArea.getDemandPredictionsPerArea(weekday, t, time_horizon)
         av_veh_info_list = veh_av_dict[sa_key]
+        # Issue 2: av_veh_val is never defined. I think it could be defined as  av_veh_val = av_veh_info_list[0]?
         imbalance = fc_val - av_veh_val
+
+    # Help FD!
+    ####################################################
+
         if imbalance <= -1* min_imbalance:
             region_idle_counter = 0
             for entry in av_veh_info_list:
@@ -922,7 +926,12 @@ def relocate_dandl(av_fleet, area, t, weekday, time_horizon, min_imbalance):
     len_veh = len(veh_av_for_relocation)
     # 3)
     # timeDistM = [[0 for j in range(len(veh_av_for_relocation))] for l in range(len(sorted_deficiencies))] add eye matrix for penalty terms
-    timeDistM = [[0 for j in range(len(veh_av_for_relocation)+len(sorted_deficiencies))] for l in range(len(sorted_deficiencies))]
+    # timeDistM = [[0 for j in range(len(veh_av_for_relocation)+len(sorted_deficiencies))] for l in range(len(sorted_deficiencies))]
+    # Comment MH: Changed sorted_deficiencies to sub_area_deficiency
+    # and added initialization of x array
+    timeDistM = [[0 for j in range(len(veh_av_for_relocation)+len(sub_area_deficiency))] for l in range(len(sub_area_deficiency))]
+    x = [[0 for j in range(len(veh_av_for_relocation))] for l in range(len(sub_area_deficiency))]
+
     count_sad = -1
     for entry in sub_area_deficiency:
         count_sad += 1
@@ -934,6 +943,8 @@ def relocate_dandl(av_fleet, area, t, weekday, time_horizon, min_imbalance):
 #                                            + j_veh.curb_time_remain * Set.veh_speed
             dist_veh_subArea = Distance.dist_manhat_region(j_veh, c_subArea)
             # Comment FD: correct units of following line?
+            # Response MH: veh_speed now 5.0 m/s
+            # remind me to make sure that the entire set of code is in meters not feet or miles
             time_veh_subArea = 1.0 * dist_veh_subArea / Set.veh_speed
             if time_veh_subArea < time_horizon:
                 timeDistM[count_sad][count_veh] = time_veh_subArea
@@ -950,7 +961,7 @@ def relocate_dandl(av_fleet, area, t, weekday, time_horizon, min_imbalance):
     # Decision Variables
     for l in range(len_sd):
         for j in range(len_veh):
-            x[l][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj = distM[l][j], name = 'x_%s_%s' % (l,j))
+            x[l][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj=timeDistM[l][j], name='x_%s_%s' % (l,j))
     models.update()
 
     # constraints
@@ -959,7 +970,7 @@ def relocate_dandl(av_fleet, area, t, weekday, time_horizon, min_imbalance):
         models.addConstr(gurobipy.quicksum(x[ll][j] for j in range(len_veh + len_sd)) == 1)
     # vehicle possibly assigned
     for jj in range(len_veh):
-        models.addConstr(gurobipy.quicksum(x[i][jj] for i in range(len_sd)) <= 1)
+        models.addConstr(gurobipy.quicksum(x[l][jj] for l in range(len_sd)) <= 1)
 
 
     models.optimize()
@@ -969,10 +980,13 @@ def relocate_dandl(av_fleet, area, t, weekday, time_horizon, min_imbalance):
         for m_sd in range(len_sd):
             for n_veh in range(len_veh):
                 if x[m_sd][n_veh].X == 1:
-                    pass_veh_assign[m_pass] = [veh_av_for_relocation[n_veh], sub_area_deficiency[m_sd][0]]
+                    temp_veh_status = "relocating"
+                    win_av = veh_av_for_relocation[n_veh]
+                    l_subarea = sub_area_deficiency[m_sd]
+                    Vehicle.update_vehicle(t, Person.Person, win_av, l_subarea, temp_veh_status)
                     break
     else:
-        sys.exit("No Optimal Solution - idleOnly_minDist")
+        sys.exit("No Optimal Solution - relocate_dandl")
     # print("Vehicles= ", len_veh, "  Passengers= ", len_pass, "  time=", time.time() - t1)
-    return pass_veh_assign
+    return
 #############################################################################################################

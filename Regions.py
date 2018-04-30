@@ -3,6 +3,7 @@ __author__ = 'Flo'
 import math
 import re
 import Settings as Set
+import Vehicle
 
 # for demand estimations
 week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -78,7 +79,11 @@ class Area():
         self.sub_areas = {}         # (xi, yj) -> SubArea object
         self.forecast_int = []      # [start_time_of_interval_1, start_time_of_interval_2, ...] (in minutes)
         # reading area definition
-        fhin = open(region_csv_file, 'r')
+
+        # Comment MH:
+        # Change to prediction_csv_file
+        # fhin = open(region_csv_file, 'r')
+        fhin = open(prediction_csv_file, 'r')
         for line in fhin:
             if not line.strip() or line.startswith("#"):
                 continue
@@ -104,7 +109,11 @@ class Area():
                     print("The x-axis of the areas in {0} are not aligned with x-axis".format(region_csv_file))
                     raise IOError
         fhin.close()
+
         # reading demand center points
+
+
+
         fhin = open(relocation_destination_f, 'r')
         for line in fhin:
             if not line.strip() or line.startswith("#"):
@@ -116,8 +125,12 @@ class Area():
             y_rel_dest = int(lc[3])
             self.sub_areas[(xi, yj)].setRelocationDestination((x_rel_dest, y_rel_dest))
         fhin.close()
+
+        # Comment MH:
+        # Change to region_csv_file
+        # fhin = open(relocation_destination_f, 'r')
         # reading demand predictions
-        fhin = open(prediction_csv_file, 'r')
+        fhin = open(region_csv_file, 'r')
         for line in fhin:
             if not self.forecast_int:
                 hc = line.strip().split(",")
@@ -174,7 +187,7 @@ class Area():
         count_veh = -1
         for j_veh in av_fleet:
             count_veh += 1
-            (av_x, av_y, av_dist) = get_next_availability(j_veh)
+            (av_x, av_y, av_dist) = Vehicle.get_next_availability(j_veh)
             av_time = av_dist/Set.veh_speed
             sa_obj = self.findSubAreaOfPoint((av_x, av_y))
             if sa_obj:
@@ -182,7 +195,7 @@ class Area():
                 yj = sa_obj.yj
                 veh_availabilities[(xi, yj)].append((count_veh, av_time))
             else:
-                print("Vehicle location {0} is out of bounds! It will not be counted to any subarea.".format(p))
+                print("Vehicle location {0} is out of bounds! It will not be counted to any subarea.".format(count_veh))
         return veh_availabilities
     #
     def getDemandPredictionsPerArea(self, weekday, time, relocation_time_horizon):
@@ -240,36 +253,36 @@ class Area():
         #
         return demand_predictions
 
-# --------------------------------------------------------------------------- #
-# test of code
-if __name__ == '__main__':
-    # example: reading input
-    prediction_csv_file = r"manhattan_trip_patterns_2x_6y_15min_only_predictions.csv"
-    region_csv_file = r"prediction_areas_2x_6y_for_testing.csv"
-    relocation_destination_csv_file = r"demand_center_points_2x_6y_for_testing.csv"
-    #region_csv_file = r"prediction_areas_2x_8y.csv"
-    area_instance = Area(region_csv_file, prediction_csv_file, relocation_destination_csv_file)
-    print(area_instance)
-    #
-    print("-----------------------------")
-    # example vehicle availabilities
-    # lower left corner: -1290.0;1509.0
-    # upper right corner: 1541.0;22682.0
-    list_vehicle_availabilities = []
-    list_vehicle_availabilities.append((0,1800))
-    list_vehicle_availabilities.append((1800,1800))
-    list_vehicle_availabilities.append((1800,7800))
-    list_vehicle_availabilities.append((0,10000))
-    list_vehicle_availabilities.append((-2000,0))   # point not in area
-    veh_av_dict = area_instance.getVehicleAvailabilitiesPerArea(list_vehicle_availabilities)
-    print(veh_av_dict)
-    #
-    print("-----------------------------")
-    # example demand predictions
-    weekday = "Tuesday"
-    #time = 10*60*60
-    time = 10*60*60-7.5*60
-    relocation_time_horizon = 30*60
-    demand_forecast = area_instance.getDemandPredictionsPerArea(weekday, time, relocation_time_horizon)
-    print("Forecast for {0} at time {1} with time horizon {2}:".format(weekday, time, relocation_time_horizon))
-    print(demand_forecast)
+# # --------------------------------------------------------------------------- #
+# # test of code
+# if __name__ == '__main__':
+#     # example: reading input
+#     prediction_csv_file = r"manhattan_trip_patterns_2x_6y_15min_only_predictions.csv"
+#     region_csv_file = r"prediction_areas_2x_6y_for_testing.csv"
+#     relocation_destination_csv_file = r"demand_center_points_2x_6y_for_testing.csv"
+#     #region_csv_file = r"prediction_areas_2x_8y.csv"
+#     area_instance = Area(region_csv_file, prediction_csv_file, relocation_destination_csv_file)
+#     print(area_instance)
+#     #
+#     print("-----------------------------")
+#     # example vehicle availabilities
+#     # lower left corner: -1290.0;1509.0
+#     # upper right corner: 1541.0;22682.0
+#     list_vehicle_availabilities = []
+#     list_vehicle_availabilities.append((0,1800))
+#     list_vehicle_availabilities.append((1800,1800))
+#     list_vehicle_availabilities.append((1800,7800))
+#     list_vehicle_availabilities.append((0,10000))
+#     list_vehicle_availabilities.append((-2000,0))   # point not in area
+#     veh_av_dict = area_instance.getVehicleAvailabilitiesPerArea(list_vehicle_availabilities)
+#     print(veh_av_dict)
+#     #
+#     print("-----------------------------")
+#     # example demand predictions
+#     weekday = "Tuesday"
+#     #time = 10*60*60
+#     time = 10*60*60-7.5*60
+#     relocation_time_horizon = 30*60
+#     demand_forecast = area_instance.getDemandPredictionsPerArea(weekday, time, relocation_time_horizon)
+#     print("Forecast for {0} at time {1} with time horizon {2}:".format(weekday, time, relocation_time_horizon))
+#     print(demand_forecast)

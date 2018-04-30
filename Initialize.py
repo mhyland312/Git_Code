@@ -19,7 +19,7 @@ def generate_demand(t_max, requests_per_hour, max_distance, max_group_size, dema
     temp_y = [0.2, 0.8, 0.2, 0.8]
     cluster_y = [y*max_distance for y in temp_y]
 
-    demand_file = open('../Inputs/Demand_Requests.csv', 'w')
+    demand_file = open('../Inputs//Artificial/Demand_Requests.csv', 'w')
     writer = csv.writer(demand_file, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
     writer.writerow(["person_id", "start_x", "start_y", "request_time", "dropoff_x", "dropoff_y", "group_size"])
 
@@ -83,7 +83,7 @@ def generate_demand(t_max, requests_per_hour, max_distance, max_group_size, dema
 
 
 def generate_fleet(max_distance, num_vehicles, veh_capacity):
-    csv_av_file = open('../Inputs/Vehicles_Taxi.csv', 'w')
+    csv_av_file = open('../Inputs/Artificial/Vehicles_Taxi.csv', 'w')
     writer = csv.writer(csv_av_file, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
     writer.writerow(["vehicle_id", "start_x", "start_y", "capacity"])
 
@@ -97,8 +97,8 @@ def generate_fleet(max_distance, num_vehicles, veh_capacity):
         # depot_num = random.randint(0,3)
         # x = cluster_x[depot_num]
         # y = cluster_y[depot_num]
-        x = max_distance/2.0  # + random.random()*5280 #max_distance*random.random()
-        y = max_distance/2.0  # + random.random()*5280#max_distance*random.random()
+        x = 1000.0  # max_distance/2.0  # + random.random()*5280 #max_distance*random.random()
+        y = 1000.0  # max_distance/2.0  # + random.random()*5280#max_distance*random.random()
         cap = veh_capacity
         rw = [my_id, x, y, cap]
         writer.writerow(rw)

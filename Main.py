@@ -9,31 +9,37 @@ import Regions
 __author__ = 'Mike'
 
 
-# Dandl
 # Comment FD:
 # I had to add two input parameters
 # Since my relocation algorithm will probably have 2 parameters, I might need to add even more.
-def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_run, taxi, xyt_string, false_forecast_f=None):
 
-    # Dandl
+# Response MH:
+# No problem at all
+def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method, veh_speed, i_date, taxi,
+         xyt_string, false_forecast_f=None):
+
     # Comment FD:
     # this part assumes 'i_run' is given in iso format, e.g. 2016-04-01
     # this is necessary to use the correct forecasts
-    (sim_year, sim_month, sim_day) = [int(x) for x in i_run.split("-")]
+
+    # Response MH:
+    # Works for me
+    (sim_year, sim_month, sim_day) = [int(x) for x in i_date.split("-")]
     week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     date = datetime.datetime(sim_year, sim_month, sim_day)
-    dayNumber = date.weekday()
-    weekday = week[dayNumber]
-
+    day_number = date.weekday()
+    weekday = week[day_number]
 
     ##################################################################################################
     # Input Information - Customer Demand
     ##################################################################################################
     # read in information about all customers
     if taxi:
-        file_str = "../Inputs/Taxi_Demand_Day" + str(i_run) + "_Sample.csv"
+        # file_str = "../Inputs/Taxi_Demand_Day" + str(i_run) + "_Sample.csv"
+        file_str = "../Inputs/NYC_Taxi/Request_Data/" + str(i_date) + "__manhattan_yellow_taxi_requests.csv"
+
     else:
-        file_str = "../Inputs/Demand_Requests.csv"
+        file_str = "../Inputs/Artificial/Demand_Requests.csv"
     demand_file = open(file_str, 'r')
 
     demand_reader = csv.reader(demand_file)
@@ -44,22 +50,21 @@ def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_r
         if count > 1:
             person_id = int(i_row[0])
             request_time = int(i_row[1])
-            pickup_x = float(i_row[2])
-            pickup_y = float(i_row[3])
-            dropoff_x = float(i_row[4])
-            dropoff_y = float(i_row[5])
-            group_size = int(i_row[6])
-            customers.append(Person.make_person(person_id, pickup_x, pickup_y, request_time, dropoff_x, dropoff_y,
-                                             group_size))
+            pick_x = float(i_row[2])
+            pick_y = float(i_row[3])
+            drop_x = float(i_row[4])
+            drop_y = float(i_row[5])
+            grp_size = int(i_row[6])
+            customers.append(Person.make_person(person_id, pick_x, pick_y, request_time, drop_x, drop_y, grp_size))
 
     ##################################################################################################
     # Input Information - AV Initial Positions
     ##################################################################################################
     # read in information about all AVs
     if taxi:
-        file_str2 = "../Inputs/Vehicles_Taxi.csv"
+        file_str2 = "../Inputs/Artificial/Vehicles_Taxi.csv"
     else:
-        file_str2 = "../Inputs/Vehicles_Taxi.csv"
+        file_str2 = "../Inputs/Artificial/Vehicles_Taxi.csv"
 
     veh_file = open(file_str2, 'r')
     vehicle_reader = csv.reader(veh_file)
@@ -98,14 +103,17 @@ def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_r
     # format of xyt_string: 2x_8y_5min
     # format of xy_string: 2x_8y
     xy_string = "_".join(xyt_string.split("_")[:2])
-    prediction_csv_file = "prediction_areas_{0}.csv".format(xy_string)
+    prediction_csv_file = "../Inputs/NYC_Taxi/Prediction_Data/prediction_areas_{0}.csv".format(xy_string)
     # region_csv_file = "prediction_areas_{0}.csv".format(xy_string)
     if false_forecast_f:
         region_csv_file = false_forecast_f
     else:
-        region_csv_file = "manhattan_trip_patterns_{0}_only_predictions.csv".format(xyt_string)
-    relocation_destination_f = "demand_center_points_{0}.csv".format(xy_string)
+        region_csv_file = "../Inputs/NYC_Taxi/Prediction_Data/manhattan_trip_patterns_{0}_only_predictions.csv".format(xyt_string)
+    relocation_destination_f = "../Inputs/NYC_Taxi/Prediction_Data/demand_center_points_{0}.csv".format(xy_string)
     area = Regions.Area(region_csv_file, prediction_csv_file, relocation_destination_f)
+
+    # Comment MH:
+    # This is gonna work great, I think! Thanks!
 
     ##################################################################################################
     # Simulation
@@ -114,7 +122,7 @@ def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_r
     # Initialize Vectors
     i_person = 0
 
-# Begin simulation
+    # Begin simulation
     new_t_max = int(1.2 * t_max)
     for t in range(0, new_t_max, time_step):
 
@@ -139,12 +147,15 @@ def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_r
                 # it should not matter if a vehicle that is idle served a customer or
                 # was relocating
 
+                # Response MH:
+                # I agree
+
             ##################################################################################################
             # move en_route drop-off AVs
             elif j_av.status == "enroute_dropoff":
                 person_drop = j_av.next_drop
                 Vehicle.move_vehicle_manhat(t, j_av, person_drop, Regions.SubArea)
-                #if AV's status changes, then the AV must have dropped off customer, and traveler status needs to change
+                # if AV's status changes, then the AV must have dropped off customer, and traveler status needs to change
                 if j_av.status != "enroute_dropoff":
                     Person.update_person(t, person_drop, j_av)
 
@@ -157,7 +168,6 @@ def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_r
                 if j_av.status != "enroute_pickup":
                     Person.update_person(t, person_pick, j_av)
 
-
         ##################################################################################################
         # check if there are new requests
         if i_person < len(customers):
@@ -169,7 +179,7 @@ def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_r
                     break
 
     ###################################################################################################
-    # Assign AVs to customer requests
+    # Assign AVs to customer requests, or subAreas
     ###################################################################################################
         # Get the number of idle AVs and unassigned customers
         count_avail_veh = len(list(j for j in av_fleet
@@ -181,50 +191,57 @@ def main(hold_for, t_max, time_step, opt_method, relocate_method, veh_speed, i_r
             if count_unassigned > 0 and count_avail_veh > 0:
                 AA.assign_veh_fcfs(av_fleet, customers, opt_method, t)
 
-        # Dandl
-        # Call relocation/rebalancing algorithm
-        # Comment FD: give reference to area object instead of sub_areas to relocation algorithm
-        # -> this allows use of area.getVehicleAvailabilitiesPerArea() and
-        #                       area.getDemandPredictionsPerArea()
-        # forecast needs to know which weekday it is
-        veh_subarea_assgn = relocate_veh(av_fleet, area, relocate_method, t, weekday)
+            if t % relocat_int == 0:
+                # Dandl
+                # Call relocation/rebalancing algorithm
+                # Comment FD: give reference to area object instead of sub_areas to relocation algorithm
+                # -> this allows use of area.getVehicleAvailabilitiesPerArea() and
+                #                       area.getDemandPredictionsPerArea()
+                # forecast needs to know which weekday it is
+                # old: veh_subarea_assgn = AA.relocate_veh(av_fleet, area, relocate_method, t, weekday)
+                AA.relocate_veh(av_fleet, area, relocate_method, t, weekday)
 
-        # Dandl
-        # Need to process sub_Areas, and vehicles that are now relocating
-        # Comment FD: veh_subarea_assgn is list of (vehicle_obj, subArea_obj) tuples
-        for [j_vehicle, l_subarea] in veh_subarea_assgn:
-            temp_veh_status = "relocating"
-            Vehicle.update_vehicle(t, Person.Person, j_vehicle, l_subarea, temp_veh_status)
+                # Response MH:
+                # It makes sense to input area object instead of sub_area
+                # I changed the code such that the processing/updating of vehicles and travelers (and subareas)
+                # are called within the assignment (and relocation) algorithm - this is why I commented out code below
+
+                # # Dandl
+                # # Need to process sub_Areas, and vehicles that are now relocating
+                # # Comment FD: veh_subarea_assgn is list of (vehicle_obj, subArea_obj) tuples
+                # for [j_vehicle, l_subarea] in veh_subarea_assgn:
+                #     temp_veh_status = "relocating"
+                #     Vehicle.update_vehicle(t, Person.Person, j_vehicle, l_subarea, temp_veh_status)
 
     ###################################################################################################
     # Assign using Optimization-based methods
         else:
             # Every X seconds assign customers in the waiting queue to an AV
-            if t % hold_for == 0 and count_unassigned > 0 and count_avail_veh > 0:
+            if t % assign_int == 0 and count_unassigned > 0 and count_avail_veh > 0:
                 AA.assign_veh_opt(av_fleet, customers, opt_method, t)
 
-        # Dandl
-        # Call relocation/rebalancing algorithm
-        # Comment FD: give reference to area object instead of sub_areas to relocation algorithm
-        # -> this allows use of area.getVehicleAvailabilitiesPerArea() and
-        #                       area.getDemandPredictionsPerArea()
-        # forecast needs to know which weekday it is
-        veh_subarea_assgn = relocate_veh(av_fleet, area, relocate_method, t, weekday)
+            if t % relocat_int == 0:
+                # Dandl
+                # Call relocation/rebalancing algorithm
+                # Comment FD: give reference to area object instead of sub_areas to relocation algorithm
+                # -> this allows use of area.getVehicleAvailabilitiesPerArea() and
+                #                       area.getDemandPredictionsPerArea()
+                # forecast needs to know which weekday it is
+                # old: veh_subarea_assgn = AA.relocate_veh(av_fleet, area, relocate_method, t, weekday)
+                AA.relocate_veh(av_fleet, area, relocate_method, t, weekday)
 
-        # Dandl
-        # Need to process sub_Areas, and vehicles that are now relocating
-        # Comment FD: veh_subarea_assgn is list of (vehicle_id, subArea-reference) tuples
-        for [j_vehicle, l_subarea] in veh_subarea_assgn:
-            temp_veh_status = "relocate"
-            Vehicle.update_vehicle(t, Person.Person, j_vehicle, l_subarea, temp_veh_status)
+                # Response MH:
+                # It makes sense to input area object instead of sub_area
+                # I changed the code such that the processing/updating of vehicles and travelers (and subareas)
+                # are called within the assignment (and relocation) algorithm - this is why I commented out code below
 
-    ###################################################################################################
-    # Assign AVs to customer requests
-    ###################################################################################################
-    # Relocate AVs
-    # Dandl
-    # Call relocation/rebalancing algorithm
-    # relocate_veh(av_fleet, sub_areas, relocate_method, t)
+                # # Dandl
+                # # Need to process sub_Areas, and vehicles that are now relocating
+                # # Comment FD: veh_subarea_assgn is list of (vehicle_obj, subArea_obj) tuples
+                # for [j_vehicle, l_subarea] in veh_subarea_assgn:
+                #     temp_veh_status = "relocating"
+                #     Vehicle.update_vehicle(t, Person.Person, j_vehicle, l_subarea, temp_veh_status)
+
 
 
 
