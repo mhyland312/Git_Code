@@ -112,10 +112,10 @@ def move_vehicle_manhat(t, vehicle, person, sub_area):
     else:
         sys.exit("Error in moveVehicle_manhat - wrong vehicle status")
 
-    # check for bugs - keep in code
-    if dest_x < 0.0 or dest_y < 0.0:
-        print(dest_x, dest_y)
-        sys.exit("Error in moveVehicle_manhat - improper vehicle-person match")
+    # # check for bugs - keep in code
+    # if dest_x < 0.0 or dest_y < 0.0:
+    #     print(dest_x, dest_y)
+    #     sys.exit("Error in moveVehicle_manhat - improper vehicle-person match")
 
     veh_x = vehicle.position_x
     veh_y = vehicle.position_y
@@ -192,11 +192,6 @@ def get_next_availability(vehicle):
         else:
             last_x = i_pass.dropoff_location_x
             last_y = i_pass.dropoff_location_y
-
-    # elif vehicle.status == "relocating":
-    #     Dandl -   I do not think we need to add this:
-    #               The relocating AV is currently 'available'
-    # comment FD: I have the same opinion
 
     return last_x, last_y, total_rem_dist
 
@@ -362,8 +357,6 @@ def update_vehicle(t, person1, vehicle, sub_area, temp_veh_status):
         # current load, position_x/y, next_drop, status, reassigned, curb_remain_time - do not change
 
     # Option 6 - AV was assigned to relocate/reposition to a different subArea
-    # Dandl - check to make sure this makes sense
-    # comment FD: looks correct
     elif temp_veh_status == "relocate":
 
         # dynamic information

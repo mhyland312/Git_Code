@@ -72,7 +72,7 @@ def relocate_veh(av_fleet, area, relocate_method, t, weekday):
 
 #############################################################################################################
 def fcfs_longest_idle(av_fleet, customers, t):
-    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status in ("idle", "relocating"))
     len_avs = len(idle_avs)
     unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
     len_custs = len(unassign_cust)
@@ -93,7 +93,7 @@ def fcfs_longest_idle(av_fleet, customers, t):
 
 #############################################################################################################
 def fcfs_nearest_idle(av_fleet, customers, t):
-    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status in ("idle", "relocating"))
     unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
 
     used_vehicles = []
@@ -123,7 +123,7 @@ def fcfs_nearest_idle(av_fleet, customers, t):
 
 #############################################################################################################
 def fcfs_smart_nn(av_fleet, customers, t):
-    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status in ("idle", "relocating"))
     len_avs = len(idle_avs)
     unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
     len_custs = len(unassign_cust)
@@ -167,7 +167,7 @@ def fcfs_smart_nn(av_fleet, customers, t):
 
 ############################################################################################################
 def fcfs_drop_smart_nn(av_fleet, customers, t):
-    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status in ("idle", "relocating"))
     drop_avs = list(k_av for k_av in av_fleet if k_av.status == "enroute_dropoff" and k_av.next_pickup.person_id < 0)
 
     unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
@@ -195,7 +195,7 @@ def fcfs_drop_smart_nn(av_fleet, customers, t):
 
                 if win_av.status == "enroute_dropoff":
                     temp_veh_status = "new_assign"
-                elif win_av.status == "idle":
+                elif win_av.status in ("idle", "relocating"):
                     temp_veh_status = "base_assign"
                 else:
                     temp_veh_status = "wrong"
@@ -222,7 +222,7 @@ def fcfs_drop_smart_nn(av_fleet, customers, t):
 
                 if j_av.status == "enroute_dropoff":
                     temp_veh_status = "new_assign"
-                elif j_av.status == "idle":
+                elif j_av.status in ("idle", "relocating"):
                     temp_veh_status = "base_assign"
                 else:
                     temp_veh_status = "wrong"
@@ -236,7 +236,7 @@ def fcfs_drop_smart_nn(av_fleet, customers, t):
 # changed one if condition
 ############################################################################################################
 def fcfs_drop_smart_nn2(av_fleet, customers, t):
-    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status in ("idle", "relocating"))
     len_idle_avs = len(idle_avs)
     drop_avs = list(k_av for k_av in av_fleet if k_av.status == "enroute_dropoff" and k_av.next_pickup.person_id < 0)
 
@@ -264,7 +264,7 @@ def fcfs_drop_smart_nn2(av_fleet, customers, t):
 
                 if win_av.status == "enroute_dropoff":
                     temp_veh_status = "new_assign"
-                elif win_av.status == "idle":
+                elif win_av.status in ("idle", "relocating"):
                     temp_veh_status = "base_assign"
                 else:
                     temp_veh_status = "wrong"
@@ -291,7 +291,7 @@ def fcfs_drop_smart_nn2(av_fleet, customers, t):
 
                 if j_av.status == "enroute_dropoff":
                     temp_veh_status = "new_assign"
-                elif j_av.status == "idle":
+                elif j_av.status in ("idle", "relocating"):
                     temp_veh_status = "base_assign"
                 else:
                     temp_veh_status = "wrong"
@@ -304,7 +304,7 @@ def fcfs_drop_smart_nn2(av_fleet, customers, t):
 
 #############################################################################################################
 def opt_idle(av_fleet, customers, t):
-    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status in ("idle", "relocating"))
     len_idle_avs = len(idle_avs)
 
     unassign_cust = list(i_cust for i_cust in customers if i_cust.status == "unassigned")
@@ -385,7 +385,7 @@ def opt_idle_pick(av_fleet, customers, t):
             assign_cust.remove(i_cust)
             temp_av_fleet.remove(j_av)
 
-    idle_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status == "idle")
+    idle_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status in ("idle", "relocating"))
     pick_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status == "enroute_pickup")
 
     # just want to get avs in the right order
@@ -410,7 +410,7 @@ def opt_idle_pick(av_fleet, customers, t):
 
             if i_pass.status == "unassigned":
 
-                if j_veh.status == "idle":
+                if j_veh.status in ("idle", "relocating"):
                     av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
                     dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + av_curb_wait
@@ -429,7 +429,7 @@ def opt_idle_pick(av_fleet, customers, t):
                     else:
                         sys.exit("Something wrong with current AV-customer match - idlePick_minDist")
 
-                elif j_veh.status == "idle":
+                elif j_veh.status in ("idle", "relocating"):
                     av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
                     dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + Set.reassign_penalty + av_curb_wait
@@ -488,7 +488,7 @@ def opt_idle_pick(av_fleet, customers, t):
                             win_cust.status = "reassign"
                             Person.update_person(t, win_cust, win_av)
 
-                        if win_av.status == "idle":
+                        if win_av.status in ("idle", "relocating"):
                             temp_veh_status = "base_assign"
                         elif win_av.status == "enroute_pickup":
                             temp_veh_status = "reassign"
@@ -514,7 +514,7 @@ def opt_idle_pick(av_fleet, customers, t):
 
 #############################################################################################################
 def opt_idle_drop(av_fleet, customers, t):
-    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status in ("idle", "relocating"))
     len_idle_avs = len(idle_avs)
     drop_avs = list(k_av for k_av in av_fleet if k_av.status == "enroute_dropoff" and k_av.next_pickup.person_id < 0)
 
@@ -578,7 +578,7 @@ def opt_idle_drop(av_fleet, customers, t):
                     win_cust = unassign_cust[m_pass]
                     win_av = idle_n_drop_avs[n_veh]
 
-                    if win_av.status == "idle":
+                    if win_av.status in ("idle", "relocating"):
                         temp_veh_status = "base_assign"
                     elif win_av.status == "enroute_dropoff":
                         temp_veh_status = "new_assign"
@@ -598,7 +598,7 @@ def opt_idle_drop(av_fleet, customers, t):
 # changed one if condition and one set of constraints
 #############################################################################################################
 def opt_idle_drop2(av_fleet, customers, t):
-    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status == "idle")
+    idle_avs = list(j_veh for j_veh in av_fleet if j_veh.status in ("idle", "relocating"))
     len_idle_avs = len(idle_avs)
     drop_avs = list(k_av for k_av in av_fleet if k_av.status == "enroute_dropoff" and k_av.next_pickup.person_id < 0)
 
@@ -668,7 +668,7 @@ def opt_idle_drop2(av_fleet, customers, t):
                     win_cust = unassign_cust[m_pass]
                     win_av = idle_n_drop_avs[n_veh]
 
-                    if win_av.status == "idle":
+                    if win_av.status in ("idle", "relocating"):
                         temp_veh_status = "base_assign"
                     elif win_av.status == "enroute_dropoff":
                         temp_veh_status = "new_assign"
@@ -698,7 +698,7 @@ def opt_idle_pick_drop(av_fleet, customers, t):
             assign_cust.remove(i_cust)
             temp_av_fleet.remove(j_av)
 
-    idle_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status == "idle")
+    idle_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status in ("idle", "relocating"))
     drop_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status == "enroute_dropoff")
     pick_avs = list(j_veh for j_veh in temp_av_fleet if j_veh.status == "enroute_pickup")
 
@@ -724,7 +724,7 @@ def opt_idle_pick_drop(av_fleet, customers, t):
 
             if i_pass.status == "unassigned":
 
-                if j_veh.status == "idle":
+                if j_veh.status in ("idle", "relocating"):
                     av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
                     dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + av_curb_wait
@@ -751,7 +751,7 @@ def opt_idle_pick_drop(av_fleet, customers, t):
                     else:
                         sys.exit("Something wrong with current AV-customer match - idlePickDrop_minDist")
 
-                elif j_veh.status == "idle":
+                elif j_veh.status in ("idle", "relocating"):
                     av_curb_wait = j_veh.curb_time_remain * Set.veh_speed
                     dist_assgn[count_pass][count_veh] = Distance.dist_manhat_pick(i_pass, j_veh) - elapsed_wait_penalty \
                                                    + Set.reassign_penalty + av_curb_wait
@@ -814,7 +814,7 @@ def opt_idle_pick_drop(av_fleet, customers, t):
                             win_cust.status = "reassign"
                             Person.update_person(t, win_cust, win_av)
 
-                        if win_av.status == "idle":
+                        if win_av.status in ("idle", "relocating"):
                             temp_veh_status = "base_assign"
                         elif win_av.status == "enroute_dropoff":
                             temp_veh_status = "new_assign"
@@ -837,12 +837,6 @@ def opt_idle_pick_drop(av_fleet, customers, t):
 #############################################################################################################
 
 
-
-# Dandl
-# Code relocation algorithm in this function
-# Input: complete information about all vehicles and all sub_areas, as well as the current time
-# Output: I can basically work with anything, but possibly, a list of AVs to relocate, and their relocating subAreas
-#
 
 #############################################################################################################
 #def relocate_dandl(av_fleet, area, t, weekday, time_horizon, min_imbalance):
@@ -887,8 +881,10 @@ def relocate_dandl(av_fleet, area, t, weekday):
     # s.t. sum_j x_lj = 1
     #      sum_l x_lj <= 1
     #
-    # 5) output in following format: list of [(j_veh, l_sub_area), ...]
-    #
+    # old5) output in following format: list of [(j_veh, l_sub_area), ...]
+    # 5) assign relocating status and destination to vehicles
+
+
     # 1)
     # veh_av_dict = {}          # subArea -> list of (veh_counter, av_time)
     veh_av_dict = area.getVehicleAvailabilitiesPerArea(av_fleet)
@@ -899,26 +895,49 @@ def relocate_dandl(av_fleet, area, t, weekday):
 
     ####################################################
     # Help FD!
+    # fc_dict = {}            # subArea -> count
+    fc_dict = area.getDemandPredictionsPerArea(weekday, t, time_horizon)
     for sa_key, c_subArea in area.sub_areas.items():
         # Issue 1: getDemandPredictionsPerArea is an attribute of Area not SubArea
-        fc_val = c_subArea.getDemandPredictionsPerArea(weekday, t, time_horizon)
+        # Flo: Sorry. I forgot about my own output structure of getDemandPredictionsPerArea() ...
+        fc_val = fc_dict[sa_key]
         av_veh_info_list = veh_av_dict[sa_key]
         # Issue 2: av_veh_val is never defined. I think it could be defined as  av_veh_val = av_veh_info_list[0]?
+        # Flo: i forgot about following point in the approach description
+        # my plan is to count availability until 't + time_horizon' as av_veh_val, but only consider vehicles available at 't' for relocations
+        # this approach considers the inflow into a region that arrives before the time horizon ends. If a vehicle arrives after that, it will not
+        # help the availability in that region in the time horizon. (it would also be possible to weigh these vehicles by the amount of time they
+        # will be available)
+        # since I anyway loop through all entries, I already create list of vehicles that can relocate and cut it later on to the correct size
+        av_veh_val = 0
+        for entry in av_veh_info_list:
+            (veh_counter, av_time) = entry
+            # test availability before time_horizon: add 1 to av_veh_val
+            if av_time < t + time_horizon:
+                av_veh_val += 1
+
+            # test availability now: veh available for relocation
+            # if av_time == t
+            # Change MH:
+            # Change FD/MH:
+            if av_time <= t:
+                if av_fleet[veh_counter].status == "relocating":
+                    veh_av_for_relocation.insert(0,av_fleet[veh_counter])
+                    av_fleet[veh_counter].status = "idle"
+                elif av_fleet[veh_counter].status == "idle":
+                    veh_av_for_relocation.append(av_fleet[veh_counter])
+
         imbalance = fc_val - av_veh_val
 
     # Help FD!
     ####################################################
 
-        if imbalance <= -1* min_imbalance:
-            region_idle_counter = 0
-            for entry in av_veh_info_list:
-                (veh_counter, av_time) = entry
-                if av_time == t and region_idle_counter <= -1*imbalance:
-                    veh_av_for_relocation.append(av_fleet[veh_counter])
-                    region_idle_counter += 1
+        if imbalance <= -1 * min_imbalance:
+            # limit the number of vehicles to relocate to the surplus of vehicles
+            veh_av_for_relocation = veh_av_for_relocation[:(-1*int(imbalance))]
         elif imbalance >= min_imbalance:
             region_penalty_factor = 1
-            for i in range(imbalance):
+            for i in range(int(imbalance)):
                 sub_area_deficiency.append((c_subArea, region_penalty_factor))
                 all_def_id += 1
                 region_penalty_factor += 1
@@ -929,8 +948,10 @@ def relocate_dandl(av_fleet, area, t, weekday):
     # timeDistM = [[0 for j in range(len(veh_av_for_relocation)+len(sorted_deficiencies))] for l in range(len(sorted_deficiencies))]
     # Comment MH: Changed sorted_deficiencies to sub_area_deficiency
     # and added initialization of x array
-    timeDistM = [[0 for j in range(len(veh_av_for_relocation)+len(sub_area_deficiency))] for l in range(len(sub_area_deficiency))]
-    x = [[0 for j in range(len(veh_av_for_relocation))] for l in range(len(sub_area_deficiency))]
+    # timeDistM = [[0 for j in range(len_veh+len_sd)] for l in range(len_sd)]
+    # x = [[0 for j in range(len_veh+len_sd)] for l in range(len_sd)]
+    timeDistM = [[100000000000 for j in range(len_veh+1)] for l in range(len_sd)]
+    x = [[0 for j in range(len_veh+1)] for l in range(len_sd)]
 
     count_sad = -1
     for entry in sub_area_deficiency:
@@ -949,9 +970,11 @@ def relocate_dandl(av_fleet, area, t, weekday):
             if time_veh_subArea < time_horizon:
                 timeDistM[count_sad][count_veh] = time_veh_subArea
             else:
-                timeDistM[count_sad][count_veh] = 1000 * time_veh_subArea # any large factor will do
+                timeDistM[count_sad][count_veh] = 100000000000 * time_veh_subArea # any large factor will do
         # penalty term
-        timeDistM[count_sad][len(veh_av_for_relocation) + count_sad] = region_penalty_factor
+        # timeDistM[count_sad][len_veh + count_sad] = region_penalty_factor
+        timeDistM[count_sad][len_veh] = region_penalty_factor * 100000
+        # timeDistM[count_sad][len(veh_av_for_relocation) + 1] = region_penalty_factor
     # 4)
     t1 = time.time()
     # Model
@@ -960,18 +983,19 @@ def relocate_dandl(av_fleet, area, t, weekday):
 
     # Decision Variables
     for l in range(len_sd):
-        for j in range(len_veh):
+        # for j in range(len_veh + len_sd):
+        for j in range(len_veh + 1):
             x[l][j] = models.addVar(vtype=gurobipy.GRB.CONTINUOUS, obj=timeDistM[l][j], name='x_%s_%s' % (l,j))
     models.update()
 
     # constraints
     # deficiency either assigned to vehicle or to penalty term
     for ll in range(len_sd):
-        models.addConstr(gurobipy.quicksum(x[ll][j] for j in range(len_veh + len_sd)) == 1)
+        # models.addConstr(gurobipy.quicksum(x[ll][j] for j in range(len_veh + len_sd)) == 1)
+        models.addConstr(gurobipy.quicksum(x[ll][j] for j in range(len_veh + 1)) == 1)
     # vehicle possibly assigned
     for jj in range(len_veh):
         models.addConstr(gurobipy.quicksum(x[l][jj] for l in range(len_sd)) <= 1)
-
 
     models.optimize()
 
@@ -980,13 +1004,15 @@ def relocate_dandl(av_fleet, area, t, weekday):
         for m_sd in range(len_sd):
             for n_veh in range(len_veh):
                 if x[m_sd][n_veh].X == 1:
-                    temp_veh_status = "relocating"
+                    temp_veh_status = "relocate"
                     win_av = veh_av_for_relocation[n_veh]
-                    l_subarea = sub_area_deficiency[m_sd]
+                    # Flo: sub_area_deficiency[m_sd] contains tuples of entries (l_subarea, l_penalty_term)
+                    l_subarea = sub_area_deficiency[m_sd][0]
                     Vehicle.update_vehicle(t, Person.Person, win_av, l_subarea, temp_veh_status)
                     break
     else:
         sys.exit("No Optimal Solution - relocate_dandl")
-    # print("Vehicles= ", len_veh, "  Passengers= ", len_pass, "  time=", time.time() - t1)
+    # if len_veh > 0:
+    #     print("Vehicles= ", len_veh, "  Regions= ", len_sd, "  time=", time.time() - t1, " time", str(t))
     return
 #############################################################################################################

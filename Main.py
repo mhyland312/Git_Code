@@ -15,8 +15,8 @@ __author__ = 'Mike'
 
 # Response MH:
 # No problem at all
-def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method, veh_speed, i_date, taxi,
-         xyt_string, false_forecast_f=None):
+def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method, veh_speed, i_date, taxi=False,
+         xyt_string="NULL", visualize=False, false_forecast_f=None):
 
     # Comment FD:
     # this part assumes 'i_run' is given in iso format, e.g. 2016-04-01
@@ -24,11 +24,12 @@ def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method,
 
     # Response MH:
     # Works for me
-    (sim_year, sim_month, sim_day) = [int(x) for x in i_date.split("-")]
-    week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    date = datetime.datetime(sim_year, sim_month, sim_day)
-    day_number = date.weekday()
-    weekday = week[day_number]
+    if relocate_method != "NULL":
+        (sim_year, sim_month, sim_day) = [int(x) for x in i_date.split("-")]
+        week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        date = datetime.datetime(sim_year, sim_month, sim_day)
+        day_number = date.weekday()
+        weekday = week[day_number]
 
     ##################################################################################################
     # Input Information - Customer Demand
@@ -36,7 +37,7 @@ def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method,
     # read in information about all customers
     if taxi:
         # file_str = "../Inputs/Taxi_Demand_Day" + str(i_run) + "_Sample.csv"
-        file_str = "../Inputs/NYC_Taxi/Request_Data/" + str(i_date) + "__manhattan_yellow_taxi_requests.csv"
+        file_str = "../Inputs/NYC_Taxi/Request_Data/" + str(i_date) + "__manhattan_yellow_taxi_requests_10percent.csv"
 
     else:
         file_str = "../Inputs/Artificial/Demand_Requests.csv"
@@ -102,18 +103,30 @@ def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method,
     # b) false_forecast_f [optional, if not given, the real forecast value will be read]
     # format of xyt_string: 2x_8y_5min
     # format of xy_string: 2x_8y
-    xy_string = "_".join(xyt_string.split("_")[:2])
-    prediction_csv_file = "../Inputs/NYC_Taxi/Prediction_Data/prediction_areas_{0}.csv".format(xy_string)
-    # region_csv_file = "prediction_areas_{0}.csv".format(xy_string)
-    if false_forecast_f:
-        region_csv_file = false_forecast_f
-    else:
-        region_csv_file = "../Inputs/NYC_Taxi/Prediction_Data/manhattan_trip_patterns_{0}_only_predictions.csv".format(xyt_string)
-    relocation_destination_f = "../Inputs/NYC_Taxi/Prediction_Data/demand_center_points_{0}.csv".format(xy_string)
-    area = Regions.Area(region_csv_file, prediction_csv_file, relocation_destination_f)
+
+    if relocate_method != "NULL":
+        xy_string = "_".join(xyt_string.split("_")[:2])
+        prediction_csv_file = "../Inputs/NYC_Taxi/Prediction_Data/prediction_areas_{0}.csv".format(xy_string)
+        # region_csv_file = "prediction_areas_{0}.csv".format(xy_string)
+        if false_forecast_f:
+            region_csv_file = false_forecast_f
+        else:
+            region_csv_file = "../Inputs/NYC_Taxi/Prediction_Data/manhattan_trip_patterns_{0}_only_predictions.csv".format(xyt_string)
+        relocation_destination_f = "../Inputs/NYC_Taxi/Prediction_Data/demand_center_points_{0}.csv".format(xy_string)
+        area = Regions.Area(region_csv_file, prediction_csv_file, relocation_destination_f)
 
     # Comment MH:
     # This is gonna work great, I think! Thanks!
+
+
+    if visualize:
+        file_string = '../Results_Rev2/visualize.csv'
+        csv_viz = open(file_string, 'w')
+        viz_writer = csv.writer(csv_viz, lineterminator='\n', delimiter=',', quotechar='"',
+                                     quoting=csv.QUOTE_NONNUMERIC)
+
+
+
 
     ##################################################################################################
     # Simulation
@@ -125,6 +138,29 @@ def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method,
     # Begin simulation
     new_t_max = int(1.2 * t_max)
     for t in range(0, new_t_max, time_step):
+
+        # For visualization purposes
+        veh_info_list = []
+        if visualize and t % 15 == 0 and t < 7200:
+            for j_veh in av_fleet:
+                veh_info_list.append([t, j_veh.status, int(j_veh.position_x), int(j_veh.position_y)])
+
+            viz_writer.writerow( veh_info_list)
+
+        # display current statuses of AVs and customers
+        # if t % 900 == 0:
+        #     len_idle = len(list(j_veh for j_veh in av_fleet if j_veh.status == "idle"))
+        #     len_relocate = len(list(j_veh for j_veh in av_fleet if j_veh.status == "relocating"))
+        #     len_pick = len(list(j_veh for j_veh in av_fleet if j_veh.status == "enroute_pickup"))
+        #     len_drop = len(list(j_veh for j_veh in av_fleet if j_veh.status == "enroute_dropoff"))
+        #     print("hour: " + str(t/3600) + " idle:" + str(len_idle) + " relocate:" + str(len_relocate)
+        #           + " pick:" + str(len_pick) + " drop:" + str(len_drop))
+        #     len_unassigned = len(list(i for i in customers if i.status == "unassigned"))
+        #     len_assigned = len(list(i for i in customers if i.status == "assigned"))
+        #     len_inVeh = len(list(i for i in customers if i.status == "inVeh"))
+        #     len_served = len(list(i for i in customers if i.status == "served"))
+        #     print("unassigned:" + str(len_unassigned) + " assigned:" + str(len_assigned)
+        #           + " inVeh:" + str(len_inVeh) + " served:" + str(len_served))
 
         for j_av in av_fleet:
 
@@ -138,17 +174,6 @@ def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method,
             elif j_av.status == "relocating":
                 sub_area = j_av.next_sub_area
                 Vehicle.move_vehicle_manhat(t, j_av, Person.Person, sub_area)
-                # if AV arrives at centroid location, change to idle
-
-                # Dandl
-                # may need to update subArea information
-                # comment FD: my idea would be to update all subArea information in the
-                # decision time steps only
-                # it should not matter if a vehicle that is idle served a customer or
-                # was relocating
-
-                # Response MH:
-                # I agree
 
             ##################################################################################################
             # move en_route drop-off AVs
@@ -183,15 +208,15 @@ def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method,
     ###################################################################################################
         # Get the number of idle AVs and unassigned customers
         count_avail_veh = len(list(j for j in av_fleet
-                                   if j.status in ["idle", "enroute_dropoff"]
+                                   if j.status in ["idle", "enroute_dropoff", "relocating"]
                                    and j.next_pickup.person_id < 0))
         count_unassigned = len(list(i for i in customers if i.status == "unassigned"))
     # Assign using FCFS methods
         if "FCFS" in opt_method:
-            if count_unassigned > 0 and count_avail_veh > 0:
+            if t % assign_int == 0 and count_unassigned > 0 and count_avail_veh > 0:
                 AA.assign_veh_fcfs(av_fleet, customers, opt_method, t)
 
-            if t % relocat_int == 0:
+            if t % relocat_int == 0 and count_avail_veh > 0 and relocate_method != "NULL":
                 # Dandl
                 # Call relocation/rebalancing algorithm
                 # Comment FD: give reference to area object instead of sub_areas to relocation algorithm
@@ -220,36 +245,62 @@ def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method,
             if t % assign_int == 0 and count_unassigned > 0 and count_avail_veh > 0:
                 AA.assign_veh_opt(av_fleet, customers, opt_method, t)
 
-            if t % relocat_int == 0:
-                # Dandl
-                # Call relocation/rebalancing algorithm
-                # Comment FD: give reference to area object instead of sub_areas to relocation algorithm
-                # -> this allows use of area.getVehicleAvailabilitiesPerArea() and
-                #                       area.getDemandPredictionsPerArea()
-                # forecast needs to know which weekday it is
-                # old: veh_subarea_assgn = AA.relocate_veh(av_fleet, area, relocate_method, t, weekday)
+            if t % relocat_int == 0 and count_avail_veh > 0 and relocate_method != "NULL":
                 AA.relocate_veh(av_fleet, area, relocate_method, t, weekday)
-
-                # Response MH:
-                # It makes sense to input area object instead of sub_area
-                # I changed the code such that the processing/updating of vehicles and travelers (and subareas)
-                # are called within the assignment (and relocation) algorithm - this is why I commented out code below
-
-                # # Dandl
-                # # Need to process sub_Areas, and vehicles that are now relocating
-                # # Comment FD: veh_subarea_assgn is list of (vehicle_obj, subArea_obj) tuples
-                # for [j_vehicle, l_subarea] in veh_subarea_assgn:
-                #     temp_veh_status = "relocating"
-                #     Vehicle.update_vehicle(t, Person.Person, j_vehicle, l_subarea, temp_veh_status)
-
-
-
-
-
+                # see comments in 'Assign using FCFS'
 
     ##################################################################################################
     # Simulation Over
     ##################################################################################################
+
+
+    ##################################################################################################
+    # Customer and AV Results
+    ##################################################################################################
+
+    # Quality of Service Metrics
+    # remove edge effects, only count middle 80% <-- previously 60%
+    start = round(0.03*len(customers))
+    end = round(0.8*len(customers))
+    metric__people = customers[start:end]
+    # num_metric_people = len(metric__people)
+
+    ###### Customer Results ###############
+    file_string1 = '../Results_Rev2/taxi_trvlr_results'+ '_hold' + str(assign_int) + '_fleet' + str(len(customers)) \
+                   + '_opt' + str(opt_method)  +'.csv'
+    csv_traveler = open(file_string1, 'w')
+    traveler_writer = csv.writer(csv_traveler, lineterminator='\n', delimiter=',', quotechar='"',
+                                 quoting=csv.QUOTE_NONNUMERIC)
+    traveler_writer.writerow(["person_id", "base_ivtt", "simulate_ivtt", "wait_assgn_time","wait_pick_time",
+                              "vehicle", "old_veh"]) #, "rideshare"])
+
+    for j_person in customers[start:end]:
+        base_ivtt = j_person.in_veh_dist/veh_speed
+        traveler_writer.writerow([j_person.person_id, base_ivtt, j_person.travel_time, j_person.wait_assgn_time,
+                                  j_person.wait_pick_time, j_person.vehicle_id, j_person.old_vehicles])
+
+    ####### AV Results ###############
+    file_string2 = '../Results_Rev2/taxi_veh_results'+ '_hold' + str(assign_int) + '_fleet' + str(len(customers)) \
+                   + '_opt' + str(opt_method)  +'.csv'
+    csv_vehicle = open(file_string2, 'w')
+    vehicle_writer = csv.writer(csv_vehicle, lineterminator='\n', delimiter=',', quotechar='"',
+                                quoting=csv.QUOTE_NONNUMERIC)
+    vehicle_writer.writerow(["vehicle_id", "distance", "pass_assgn", "pass_pick", "pass_drop",
+                             "pass_drop_list"])
+
+    cum_distance = 0
+    for k_vehicle in av_fleet:
+        cum_distance += k_vehicle.total_distance
+        vehicle_writer.writerow([k_vehicle.vehicle_id, k_vehicle.total_distance, k_vehicle.pass_assgn_count,
+                                 k_vehicle.pass_pick_count, k_vehicle.pass_drop_count, k_vehicle.pass_dropped_list])
+    if taxi:
+        cum_distance = cum_distance/1000.0
+        vehicle_writer.writerow(["cum_distance_km", cum_distance])
+    else:
+        cum_distance = cum_distance/5280.0
+        vehicle_writer.writerow(["cum_distance_ft", cum_distance])
+
+
 
     ##################################################################################################
     # Calculate Performance Metrics for Single Simulation
@@ -264,18 +315,9 @@ def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method,
     num_unassgnd = (list(p.status for p in customers)).count("unassigned")
     print("num_served", num_served)
 
-    # Quality of Service Metrics
-    # remove edge effects, only count middle 80% <-- previously 60%
-    start = round(0.1*len(customers))
-    end = round(0.8*len(customers))
-    metric__people = customers[start:end]
-    # num_metric_people = len(metric__people)
 
-    # perc__rideshare = round(numpy.mean(list(p.rideshare for p in metric__people if p.status == "served")),2)
+
     perc_reassigned = round(numpy.mean(list(p.reassigned for p in metric__people if p.status == "served")),2)
-
-    # mean_ivtt = int(numpy.mean(list(p.travel_time for p in metric__people if p.status == "served")))
-    # sd_ivtt = int(numpy.std(list(p.travel_time for p in metric__people if p.status == "served")))
 
     mean_wait_pick = int(numpy.mean(list(p.wait_pick_time for p in metric__people if p.status == "served")))
     # sd_wait_pick = int(numpy.std(list(p.wait_pick_time for p in metric__people if p.status == "served")))
@@ -288,68 +330,46 @@ def main(assign_int, relocat_int, t_max, time_step, opt_method, relocate_method,
 
     # AV Metrics ###############
 
-    tot_fleet_miles = int(sum(list(v.total_distance for v in av_fleet))/5280.0)
-    mean_tot_veh_dist = round(numpy.mean(list(v.total_distance for v in av_fleet))/5280.0, 2)
-    # sd_tot_veh_dist = round(numpy.std(list(v.total_distance for v in Vehicles))/5280.0,2)
-
-    empty_fleet_miles = int(sum(list(v.empty_distance for v in av_fleet))/5280.0)
-    # mean_empty_veh_dist= round(numpy.mean(list(v.empty_distance for v in Vehicles))/5280.0,2)
-    # sd_empty_veh_dist = round(numpy.std(list(v.empty_distance for v in Vehicles))/5280.0,2)
-
-    # loaded_fleet_miles = int(sum(list(v.loaded_distance for v in Vehicles))/5280.0)
-    # mean_loaded_veh_dist= round(numpy.mean(list(v.loaded_distance for v in Vehicles))/5280.0,2)
-    # sd_loaded_veh_dist = round(numpy.std(list(v.loaded_distance for v in Vehicles))/5280.0,2)
-
-    perc_empty_miles = round(empty_fleet_miles/float(tot_fleet_miles), 3)
-
-    fleet_hours = ((mean_tot_veh_dist*5280.0)/veh_speed)/3600.0
-    fleet_utilization = round(fleet_hours / (new_t_max / 3600.0), 2)
+    if taxi:
+        tot_fleet_dist = int(sum(list(v.total_distance for v in av_fleet))/1000.0)  # km
+        mean_tot_veh_dist = round(numpy.mean(list(v.total_distance for v in av_fleet))/1000.0, 2) # km
+    
+        empty_fleet_dist = int(sum(list(v.empty_distance for v in av_fleet))/1000.0)  # km
+        perc_empty_dist = round(empty_fleet_dist/float(tot_fleet_dist), 3)
+    
+        fleet_hours = ((mean_tot_veh_dist*1000.0)/veh_speed)/3600.0
+        fleet_utilization = round(fleet_hours / (new_t_max / 3600.0), 2)
+        
+    else: 
+        tot_fleet_dist = int(sum(list(v.total_distance for v in av_fleet))/5280.0)  # miles
+        mean_tot_veh_dist = round(numpy.mean(list(v.total_distance for v in av_fleet))/5280.0, 2)  # miles
+        # sd_tot_veh_dist = round(numpy.std(list(v.total_distance for v in Vehicles))/5280.0,2)
+    
+        empty_fleet_dist = int(sum(list(v.empty_distance for v in av_fleet))/5280.0)  # miles
+        # mean_empty_veh_dist= round(numpy.mean(list(v.empty_distance for v in Vehicles))/5280.0,2)
+        # sd_empty_veh_dist = round(numpy.std(list(v.empty_distance for v in Vehicles))/5280.0,2)
+    
+        # loaded_fleet_miles = int(sum(list(v.loaded_distance for v in Vehicles))/5280.0)
+        # mean_loaded_veh_dist= round(numpy.mean(list(v.loaded_distance for v in Vehicles))/5280.0,2)
+        # sd_loaded_veh_dist = round(numpy.std(list(v.loaded_distance for v in Vehicles))/5280.0,2)
+    
+        perc_empty_dist = round(empty_fleet_dist/float(tot_fleet_dist), 3)
+    
+        fleet_hours = ((mean_tot_veh_dist*5280.0)/veh_speed)/3600.0
+        fleet_utilization = round(fleet_hours / (new_t_max / 3600.0), 2)
 
     # Initialize Vector of Metrics
     # sim_results = [num_metric_People,  perc_reassigned,
     #                mean_ivtt, sd_ivtt, mean_wait_pick, sd_wait_pick, mean_wait_assgn, sd_wait_assgn,
     #                mean_trip_dist, sd_trip_dist,
-    #                tot_fleet_miles, mean_tot_veh_dist, sd_tot_veh_dist,
+    #                tot_fleet_dist, mean_tot_veh_dist, sd_tot_veh_dist,
     #                empty_fleet_miles, perc_empty_miles, fleet_utilization,
     #                mean_increase_RS_ivtt, sd_increase_RS_ivtt,
     #                num_served, num_inVeh, num_assgnd, num_unassgnd]
 
-    sim_results = [ mean_wait_pick, perc_empty_miles, perc_reassigned, fleet_utilization,
+    sim_results = [ mean_wait_pick, perc_empty_dist, perc_reassigned, fleet_utilization,
                    num_served, num_in_veh, num_assgnd, num_unassgnd]
 
-    ##################################################################################################
-    # Customer and AV Results
-    ##################################################################################################
 
-    ####### Customer Results ###############
-    # file_string1 = '../Results_Rev2/taxi_trvlr_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) \
-    #                + '_opt' + str(opt_method)  +'.csv'
-    # csv_traveler = open(file_string1, 'w')
-    # traveler_writer = csv.writer(csv_traveler, lineterminator='\n', delimiter=',', quotechar='"',
-    #                              quoting=csv.QUOTE_NONNUMERIC)
-    # traveler_writer.writerow(["person_id", "base_ivtt", "simulate_ivtt", "wait_assgn_time","wait_pick_time",
-    #                           "vehicle", "old_veh"]) #, "rideshare"])
-    #
-    # for j_person in customers[start:end]:
-    #     base_ivtt = j_person.in_veh_dist/veh_speed
-    #     traveler_writer.writerow([j_person.person_id, base_ivtt, j_person.travel_time, j_person.wait_assgn_time,
-    #                               j_person.wait_pick_time, j_person.vehicle_id, j_person.old_vehicles])
-    #
-    # ####### AV Results ###############
-    # file_string2 = '../Results_Rev2/taxi_veh_results'+ '_hold' + str(hold_for) + '_fleet' + str(fleet_size) \
-    #                + '_opt' + str(opt_method)  +'.csv'
-    # csv_vehicle = open(file_string2, 'w')
-    # vehicle_writer = csv.writer(csv_vehicle, lineterminator='\n', delimiter=',', quotechar='"',
-    #                             quoting=csv.QUOTE_NONNUMERIC)
-    # vehicle_writer.writerow(["vehicle_id", "distance", "pass_assgn", "pass_pick", "pass_drop",
-    #                          "pass_drop_list"])
-    #
-    # cum_distance = 0
-    # for k_vehicle in av_fleet:
-    #     cum_distance += k_vehicle.total_distance
-    #     vehicle_writer.writerow([k_vehicle.vehicle_id, k_vehicle.total_distance, k_vehicle.pass_assgn_count,
-    #                              k_vehicle.pass_pick_count, k_vehicle.pass_drop_count, k_vehicle.pass_dropped_list])
-    #
-    # vehicle_writer.writerow(["cum_distance", cum_distance/5280.0])
 
     return (sim_results)

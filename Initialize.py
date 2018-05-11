@@ -5,7 +5,7 @@ import csv
 __author__ = 'Mike'
 
 
-def generate_demand(t_max, requests_per_hour, max_distance, max_group_size, demand_type):
+def generate_demand(t_max, requests_per_hour, max_distance, max_group_size, demand_type, taxi):
     simul_len = (t_max / 3600.0)
     num_requests = int(simul_len * requests_per_hour)
 
@@ -23,12 +23,20 @@ def generate_demand(t_max, requests_per_hour, max_distance, max_group_size, dema
     writer = csv.writer(demand_file, lineterminator='\n', delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
     writer.writerow(["person_id", "start_x", "start_y", "request_time", "dropoff_x", "dropoff_y", "group_size"])
 
+    if taxi:
+        min_allow_dist = 1000.0  # meters
+    else:
+        min_allow_dist = 0.8 * 5280.0  # feet
+
+
     for i in range(num_requests):
         a = i
         b = int(demand_times[i])
 
         temp_dist = 0.0
-        while temp_dist < 0.8 * 5280.0:
+
+
+        while temp_dist < min_allow_dist:
 
             if demand_type == "O_Uniform_D_Uniform":
                 c = round(max_distance*random.random(), 4)
@@ -97,8 +105,8 @@ def generate_fleet(max_distance, num_vehicles, veh_capacity):
         # depot_num = random.randint(0,3)
         # x = cluster_x[depot_num]
         # y = cluster_y[depot_num]
-        x = 1000.0  # max_distance/2.0  # + random.random()*5280 #max_distance*random.random()
-        y = 1000.0  # max_distance/2.0  # + random.random()*5280#max_distance*random.random()
+        x = 1541.0  # max_distance/2.0   #   # + random.random()*5280 #max_distance*random.random()
+        y = 6802.0  # max_distance/2.0 #  # max_distance/2.0  # + random.random()*5280#max_distance*random.random()
         cap = veh_capacity
         rw = [my_id, x, y, cap]
         writer.writerow(rw)

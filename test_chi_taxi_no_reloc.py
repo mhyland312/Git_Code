@@ -8,6 +8,8 @@ __author__ = 'Mike'
 
 t0 = time.time()
 
+visualize = True
+
 area_size_miles = [25.0]
 area_size = [x * 5280.0 for x in area_size_miles]
 
@@ -21,6 +23,8 @@ opt_methods = ["1_FCFS_longestIdle", "2_FCFS_nearestIdle",
                "8_match_idlePickDrop"]
 
 relocate_method = "Dandl"
+
+xyt_string = 'NULL'
 
 csv_results2 = open('../Results_Rev2/Taxi_Day7Sample_SmallFleet' + '_holds' + str(len(hold_for)) + '_fleet' +
                     str(len(fleet_size)) + '_opt' + str(len(opt_methods)) + '.csv', 'w')
@@ -43,7 +47,8 @@ for i_run in range(7, 8):
                 print("fleet size:", j_fleet_size, " hold for:", k_hold_for, " Opt Method:", m_opt_method)
                 # run simulation
                 results = Main.main(k_hold_for, Set.t_max, Set.time_step,
-                                    m_opt_method, relocate_method, Set.veh_speed, i_run, True)
+                                    m_opt_method, relocate_method, Set.veh_speed, i_run, True,
+                                    xyt_string, visualize, false_forecast_f=None)
 
                 print(results)
                 results_writer2.writerow(

@@ -34,7 +34,7 @@ class SubArea():
     # lc is a row in the demand prediction file
     def setDemandPrediction(self, lc):
         weekday = lc[2]
-        self.demand_forecast[weekday] = [float(x) for x in lc[4:]]
+        self.demand_forecast[weekday] = [float(x)/10.0 for x in lc[4:]]  # Comment MH: Divide Forecast by 10, because divided demand by 10
         for entry in self.demand_forecast[weekday]:
             if entry != 0:
                 self.number_nonzero_forecast_entries += 1
